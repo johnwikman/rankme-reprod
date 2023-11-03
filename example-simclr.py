@@ -21,6 +21,7 @@ LOG_LEVELS = [logging.INFO, logging.DEBUG]
 
 DEFAULT_DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+
 parser = argparse.ArgumentParser("Example of using the SimCLR functionality")
 parser.add_argument("-v", "--verbose", dest="verbosity", action="count", default=0)
 parser.add_argument("-q", "--quiet", dest="log_stderr", action="store_false", help="Do not output log messages to stderr.")
@@ -30,10 +31,12 @@ parser.add_argument("--dataset-dir", dest="dataset_dir", default="_datasets")
 parser.add_argument("--device", dest="device", type=torch.device, default="cpu")
 parser.add_argument("-j", "--workers", dest="workers", metavar="N", type=int, default=12,
                     help="number of data loading workers")
+parser.add_argument("--fp16", dest="fp16_precision", action="store_true", help="Do computations with 16-bit precision floating point (CUDA only).")
 
 parser << rankme_reprod.simclr.simclr.simclr_args
 
 args = parser.parse_args()
+
 
 # Setup the root logger
 logging.getLogger().setLevel(LOG_LEVELS[min(args.verbosity, len(LOG_LEVELS)-1)])
@@ -53,22 +56,14 @@ writer = SummaryWriter(os.path.join(
     datetime.now().strftime("example-simclr_%Y-%m-%d_%H.%M.%S"),
 ))
 
-"""
-Unported code:
-    assert args.n_views == 2, "Only two view training is supported. Please use --n-views 2."
-    # check if gpu training is available
-    if not args.disable_cuda and torch.cuda.is_available():
-        args.device = torch.device('cuda')
-        cudnn.deterministic = True
-        cudnn.benchmark = True
-    else:
-        args.device = torch.device('cpu')
-        args.gpu_index = -1
-"""
 
-dataset = rankme_reprod.simclr.data_aug.ContrastiveLearningDataset(args.dataset_dir)
+from rankme_reprod.simclr.data_aug import simclr_transform
 
-train_dataset = dataset.get_dataset("cifar10", args.n_views)
+train_dataset = torchvision.datasets.CIFAR10(args.dataset_dir,
+    train=True,
+    transform=simclr_transform(32, args.n_views),
+    download=True,
+)
 
 train_loader = torch.utils.data.DataLoader(
     train_dataset, batch_size=args.batch_size,
@@ -76,12 +71,14 @@ train_loader = torch.utils.data.DataLoader(
     num_workers=args.workers,
     pin_memory=True, drop_last=True)
 
-model = torchvision.models.resnet18(pretrained=False, num_classes=128)
+model = torchvision.models.resnet18(pretrained=False, num_classes=10)
 # Add extra fully connected layer to model
 mlpdim = model.fc.in_features
 model.fc = nn.Sequential(nn.Linear(mlpdim, mlpdim), nn.ReLU(), model.fc)
 
-#model = rankme_reprod.simclr.models.ResNetSimCLR(base_model="resnet18", out_dim=128) # out_dim is the number of features!
+# JIT Compile the model
+model = torch.jit.script(model)
+
 model = model.to(args.device)
 
 optimizer = torch.optim.Adam(model.parameters(), args.lr, weight_decay=args.weight_decay)
@@ -101,4 +98,4 @@ rankme_reprod.simclr.simclr.simclr(
 
 s.train(train_loader, writer)
 
-LOG.warning("DONE")
+LOG.info("DONE")

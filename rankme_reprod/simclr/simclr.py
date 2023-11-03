@@ -4,9 +4,7 @@ import sys
 
 import torch
 import torch.nn.functional as F
-#from torch.cuda.amp import GradScaler, autocast
 from tqdm import tqdm
-from .utils import accuracy, save_checkpoint
 
 from ..method_args import MethodArguments, MethodArg as MA
 
@@ -70,42 +68,54 @@ def info_nce_loss(features : torch.Tensor,
 
 def simclr(args, model, optimizer, scheduler, train_loader,
            writer=None,
+           fp16_precision=False,
            device=torch.device("cpu")):
-        criterion = torch.nn.CrossEntropyLoss().to(device)
-        #scaler = GradScaler(enabled=args.fp16_precision)
+
+        if fp16_precision:
+            from torch.cuda.amp import GradScaler, autocast
+            scaler = GradScaler(enabled=True)
 
         # save config file (this is pointless, just output the args to stdout instead)
         # save_config_file(writer.log_dir, args)
+        criterion = torch.nn.CrossEntropyLoss().to(device)
 
         n_iter = 0
         LOG.info(f"Start SimCLR training for {args.epochs} epochs.")
-        #LOG.info(f"Training with gpu: {args.disable_cuda}.")
+        LOG.info(f"(Using 16-bit floating point precision: {fp16_precision}.")
 
         for epoch_counter in range(args.epochs):
             for images, _ in tqdm(train_loader):
                 images = torch.cat(images, dim=0)
-
                 images = images.to(device)
-
-                #with autocast(enabled=args.fp16_precision):
-                features = model(images)
-                logits, labels = info_nce_loss(
-                    features,
-                    temperature=args.temperature,
-                    n_views=args.n_views,
-                    batch_size=args.batch_size,
-                    device=device,
-                )
-                loss = criterion(logits, labels)
 
                 optimizer.zero_grad()
 
-                #scaler.scale(loss).backward()
-                loss.backward()
-
-                #scaler.step(optimizer)
-                #scaler.update()
-                optimizer.step()
+                if fp16_precision:
+                    with autocast(enabled=True):
+                        features = model(images)
+                        logits, labels = info_nce_loss(
+                            features,
+                            temperature=args.temperature,
+                            n_views=args.n_views,
+                            batch_size=args.batch_size,
+                            device=device,
+                        )
+                        loss = criterion(logits, labels)
+                        scaler.scale(loss).backward()
+                        scaler.step(optimizer)
+                        scaler.update()
+                else:
+                    features = model(images)
+                    logits, labels = info_nce_loss(
+                        features,
+                        temperature=args.temperature,
+                        n_views=args.n_views,
+                        batch_size=args.batch_size,
+                        device=device,
+                    )
+                    loss = criterion(logits, labels)
+                    loss.backward()
+                    optimizer.step()
 
                 if n_iter % 100 == 0: #args.log_every_n_steps == 0:
                     top1, top5 = accuracy(logits, labels, topk=(1, 5))
@@ -123,11 +133,29 @@ def simclr(args, model, optimizer, scheduler, train_loader,
 
         LOG.info("Training has finished.")
         # save model checkpoints
-        checkpoint_name = 'checkpoint_{:04d}.pth.tar'.format(args.epochs)
-        save_checkpoint({
+        checkpoint_path = os.path.join(writer.log_dir, f"checkpoint_{epochs}.pth.tar")
+        torch.save({
             "epoch": args.epochs,
-            "arch": "resnet18", #args.arch,
+            "arch": "resnet18 (?)",
             "state_dict": model.state_dict(),
             "optimizer": optimizer.state_dict(),
-        }, is_best=False, filename=os.path.join(writer.log_dir, checkpoint_name))
-        LOG.info(f"Model checkpoint and metadata has been saved at {writer.log_dir}.")
+        }, checkpoint_path)
+        LOG.info(f"Model checkpoint and metadata has been saved at {checkpoint_path}.")
+
+
+def accuracy(output, target, topk=(1,)):
+    """Computes the accuracy over the k top predictions for the specified values of k"""
+    with torch.no_grad():
+        maxk = max(topk)
+        batch_size = target.size(0)
+
+        _, pred = output.topk(maxk, 1, True, True)
+        pred = pred.t()
+        correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+        res = []
+        for k in topk:
+            correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
+            res.append(correct_k.mul_(100.0 / batch_size))
+        return res
+
