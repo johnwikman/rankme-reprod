@@ -101,6 +101,4 @@ simclr(
     device=args.device,
 )
 
-s.train(train_loader, writer)
-
 LOG.info("DONE")
