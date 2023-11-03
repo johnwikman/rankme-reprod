@@ -1,4 +1,4 @@
-from . import simclr, utils, data_aug, exceptions, models
+from . import simclr, utils, data_aug
 
 __version__ = "1.0.1"
 __source__ = "https://github.com/sthalles/SimCLR"

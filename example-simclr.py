@@ -7,6 +7,8 @@ import sys
 from datetime import datetime
 
 import torch
+import torch.nn as nn
+import torchvision.models
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -74,22 +76,29 @@ train_loader = torch.utils.data.DataLoader(
     num_workers=args.workers,
     pin_memory=True, drop_last=True)
 
-model = rankme_reprod.simclr.models.ResNetSimCLR(base_model="resnet18", out_dim=128) # out_dim is the number of features!
+model = torchvision.models.resnet18(pretrained=False, num_classes=128)
+# Add extra fully connected layer to model
+mlpdim = model.fc.in_features
+model.fc = nn.Sequential(nn.Linear(mlpdim, mlpdim), nn.ReLU(), model.fc)
+
+#model = rankme_reprod.simclr.models.ResNetSimCLR(base_model="resnet18", out_dim=128) # out_dim is the number of features!
+model = model.to(args.device)
 
 optimizer = torch.optim.Adam(model.parameters(), args.lr, weight_decay=args.weight_decay)
 
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
                                                        last_epoch=-1)
 
-s = rankme_reprod.simclr.simclr.SimCLR(
+rankme_reprod.simclr.simclr.simclr(
+    args,
     model,
     optimizer,
     scheduler,
-    args=args,
+    train_loader,
+    writer=writer,
     device=args.device,
 )
 
 s.train(train_loader, writer)
 
 LOG.warning("DONE")
-
