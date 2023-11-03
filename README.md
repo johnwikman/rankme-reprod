@@ -11,3 +11,11 @@ Papers and interesting links:
 * A PyTorch version of SimCLR: https://github.com/sthalles/SimCLR
 
 
+Install CUDA dependencies with
+```sh
+conda create -n rankme-cuda
+conda activate rankme-cuda
+conda install pytorch torchvision torchaudio pytorch-cuda=11.8 tqdm pyyaml -c pytorch -c nvidia
+conda install tensorboard
+```
+the environment files are insufferably slow here...

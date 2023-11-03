@@ -17,13 +17,17 @@ LOG.addHandler(logging.NullHandler())
 
 LOG_LEVELS = [logging.INFO, logging.DEBUG]
 
+DEFAULT_DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 parser = argparse.ArgumentParser("Example of using the SimCLR functionality")
 parser.add_argument("-v", "--verbose", dest="verbosity", action="count", default=0)
 parser.add_argument("-q", "--quiet", dest="log_stderr", action="store_false", help="Do not output log messages to stderr.")
 parser.add_argument("--logfile", dest="logfile", default=None, help="Output log messages to this file.")
 parser.add_argument("--tbdir", "--tensorboard-dir", dest="tensorboard_directory", default="runs")
 parser.add_argument("--dataset-dir", dest="dataset_dir", default="_datasets")
-parser.add_argument("--device", dest="device", default="cpu")
+parser.add_argument("--device", dest="device", type=torch.device, default="cpu")
+parser.add_argument("-j", "--workers", dest="workers", metavar="N", type=int, default=12,
+                    help="number of data loading workers")
 
 parser << rankme_reprod.simclr.simclr.simclr_args
 
@@ -67,7 +71,7 @@ train_dataset = dataset.get_dataset("cifar10", args.n_views)
 train_loader = torch.utils.data.DataLoader(
     train_dataset, batch_size=args.batch_size,
     shuffle=True,
-    num_workers=1, #args.workers,
+    num_workers=args.workers,
     pin_memory=True, drop_last=True)
 
 model = rankme_reprod.simclr.models.ResNetSimCLR(base_model="resnet18", out_dim=128) # out_dim is the number of features!
@@ -80,7 +84,7 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(trai
 s = rankme_reprod.simclr.simclr.SimCLR(
     model,
     optimizer,
-    scheduler, #for what
+    scheduler,
     args=args,
     device=args.device,
 )
