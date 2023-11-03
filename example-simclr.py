@@ -52,6 +52,9 @@ if args.logfile is not None:
     logfile_handler.setFormatter(LOG_FMT)
     logging.getLogger().addHandler(logfile_handler)
 
+
+LOG.debug(f"arguments: {vars(args)}")
+
 # Setup TensorBoard writer
 writer = SummaryWriter(os.path.join(
     args.tensorboard_directory,
