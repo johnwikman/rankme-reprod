@@ -122,7 +122,7 @@ def simclr(args, model, optimizer, scheduler, train_loader,
                     writer.add_scalar('loss', loss, global_step=n_iter)
                     writer.add_scalar('acc/top1', top1[0], global_step=n_iter)
                     writer.add_scalar('acc/top5', top5[0], global_step=n_iter)
-                    writer.add_scalar('learning_rate', scheduler.get_lr()[0], global_step=n_iter)
+                    writer.add_scalar('learning_rate', scheduler.get_last_lr()[0], global_step=n_iter)
 
                 n_iter += 1
 
@@ -133,7 +133,7 @@ def simclr(args, model, optimizer, scheduler, train_loader,
 
         LOG.info("Training has finished.")
         # save model checkpoints
-        checkpoint_path = os.path.join(writer.log_dir, f"checkpoint_{epochs}.pth.tar")
+        checkpoint_path = os.path.join(writer.log_dir, f"checkpoint_{args.epochs}.pth.tar")
         torch.save({
             "epoch": args.epochs,
             "arch": "resnet18 (?)",

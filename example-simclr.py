@@ -12,7 +12,8 @@ import torchvision.models
 
 from torch.utils.tensorboard import SummaryWriter
 
-import rankme_reprod
+from rankme_reprod.simclr.simclr import simclr, simclr_args
+from rankme_reprod.simclr.data_aug import simclr_transform
 
 LOG = logging.getLogger(__name__)
 LOG.addHandler(logging.NullHandler())
@@ -29,11 +30,12 @@ parser.add_argument("--logfile", dest="logfile", default=None, help="Output log 
 parser.add_argument("--tbdir", "--tensorboard-dir", dest="tensorboard_directory", default="runs")
 parser.add_argument("--dataset-dir", dest="dataset_dir", default="_datasets")
 parser.add_argument("--device", dest="device", type=torch.device, default="cpu")
+parser.add_argument("--feat-dim", dest="featdim", type=int, default=128, help="Feature dimension")
 parser.add_argument("-j", "--workers", dest="workers", metavar="N", type=int, default=12,
                     help="number of data loading workers")
 parser.add_argument("--fp16", dest="fp16_precision", action="store_true", help="Do computations with 16-bit precision floating point (CUDA only).")
 
-parser << rankme_reprod.simclr.simclr.simclr_args
+parser << simclr_args
 
 args = parser.parse_args()
 
@@ -57,8 +59,6 @@ writer = SummaryWriter(os.path.join(
 ))
 
 
-from rankme_reprod.simclr.data_aug import simclr_transform
-
 train_dataset = torchvision.datasets.CIFAR10(args.dataset_dir,
     train=True,
     transform=simclr_transform(32, args.n_views),
@@ -69,9 +69,11 @@ train_loader = torch.utils.data.DataLoader(
     train_dataset, batch_size=args.batch_size,
     shuffle=True,
     num_workers=args.workers,
-    pin_memory=True, drop_last=True)
+    pin_memory=True, drop_last=True,
+)
 
-model = torchvision.models.resnet18(pretrained=False, num_classes=10)
+# The output from ResNet is the number of features
+model = torchvision.models.resnet18(num_classes=args.featdim)
 # Add extra fully connected layer to model
 mlpdim = model.fc.in_features
 model.fc = nn.Sequential(nn.Linear(mlpdim, mlpdim), nn.ReLU(), model.fc)
@@ -86,7 +88,7 @@ optimizer = torch.optim.Adam(model.parameters(), args.lr, weight_decay=args.weig
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
                                                        last_epoch=-1)
 
-rankme_reprod.simclr.simclr.simclr(
+simclr(
     args,
     model,
     optimizer,
