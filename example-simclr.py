@@ -98,6 +98,7 @@ simclr(
     scheduler,
     train_loader,
     writer=writer,
+    fp16_precision=args.fp16_precision,
     device=args.device,
 )
 
