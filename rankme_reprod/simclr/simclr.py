@@ -81,7 +81,7 @@ def simclr(args, model, optimizer, scheduler, train_loader,
 
         n_iter = 0
         LOG.info(f"Start SimCLR training for {args.epochs} epochs.")
-        LOG.info(f"(Using 16-bit floating point precision: {fp16_precision}.")
+        LOG.info(f"(Using 16-bit floating point precision: {fp16_precision})")
 
         for epoch_counter in range(args.epochs):
             for images, _ in tqdm(train_loader):
