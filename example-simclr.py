@@ -149,30 +149,31 @@ cifar10_trainloader = torch.utils.data.DataLoader(
 )
 
 criterion = nn.CrossEntropyLoss().to(args.device)
-top1_accuracies = []
-top5_accuracies = []
-losses = []
 train_iterator = tqdm(cifar10_trainloader)
-for images, labels in train_iterator:
-    images = images.to(args.device)
-    labels = labels.to(args.device)
+for _ in range(args.epochs):
+    top1_accuracies = []
+    top5_accuracies = []
+    losses = []
+    for images, labels in train_iterator:
+        images = images.to(args.device)
+        labels = labels.to(args.device)
 
-    opt.zero_grad()
-    logits = model(images)
-    loss = criterion(logits, labels)
-    loss.backward()
-    opt.step()
-    with torch.no_grad():
-        top1, top5 = rankme_reprod.evaluate.topk_accuracy(logits, labels, topk=(1, 5))
-        top1_accuracies.append(float(top1[0]))
-        top5_accuracies.append(float(top5[0]))
-        losses.append(float(loss.item()))
-        train_iterator.set_postfix_str(" | ".join([
-            f"avg. loss: {sum(losses[-10:]) / len(losses[-10:]):.05f}",
-            f"top 1 acc: {sum(top1_accuracies[-10:]) / len(top1_accuracies[-10:]):.05f}",
-            f"top 5 acc: {sum(top5_accuracies[-10:]) / len(top5_accuracies[-10:]):.05f}",
-        ]))
+        opt.zero_grad()
+        logits = model(images)
+        loss = criterion(logits, labels)
+        loss.backward()
+        opt.step()
+        with torch.no_grad():
+            top1, top5 = rankme_reprod.evaluate.topk_accuracy(logits, labels, topk=(1, 5))
+            top1_accuracies.append(float(top1[0]))
+            top5_accuracies.append(float(top5[0]))
+            losses.append(float(loss.item()))
+            train_iterator.set_postfix_str(" | ".join([
+                f"avg. loss: {sum(losses[-10:]) / len(losses[-10:]):.05f}",
+                f"top 1 acc: {sum(top1_accuracies[-10:]) / len(top1_accuracies[-10:]):.05f}",
+                f"top 5 acc: {sum(top5_accuracies[-10:]) / len(top5_accuracies[-10:]):.05f}",
+            ]))
 
-LOG.info(f"Average loss: {sum(losses) / len(losses)}")
-LOG.info(f"Top 1 accuracy: {sum(top1_accuracies) / len(top1_accuracies)}")
-LOG.info(f"Top 5 accuracy: {sum(top5_accuracies) / len(top5_accuracies)}")
+    LOG.info(f"Average loss: {sum(losses) / len(losses)}")
+    LOG.info(f"Top 1 accuracy: {sum(top1_accuracies) / len(top1_accuracies)}")
+    LOG.info(f"Top 5 accuracy: {sum(top5_accuracies) / len(top5_accuracies)}")
