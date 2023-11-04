@@ -19,3 +19,10 @@ conda install pytorch torchvision torchaudio pytorch-cuda=11.8 tqdm pyyaml -c py
 conda install tensorboard
 ```
 the environment files are insufferably slow with CUDA for some reason...
+
+
+Example uses:
+```
+./example-simclr.py -v --device=cuda -j16 --feat-dim=256 --epochs 100
+```
+
