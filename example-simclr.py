@@ -149,11 +149,11 @@ cifar10_trainloader = torch.utils.data.DataLoader(
 )
 
 criterion = nn.CrossEntropyLoss().to(args.device)
-train_iterator = tqdm(cifar10_trainloader)
 for _ in range(args.epochs):
     top1_accuracies = []
     top5_accuracies = []
     losses = []
+    train_iterator = tqdm(cifar10_trainloader)
     for images, labels in train_iterator:
         images = images.to(args.device)
         labels = labels.to(args.device)
