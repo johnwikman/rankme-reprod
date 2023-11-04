@@ -137,14 +137,12 @@ cifar10_train = torchvision.datasets.CIFAR10(
     download=True,
 )
 
-from torch.utils.data.dataloader import default_collate
 cifar10_trainloader = torch.utils.data.DataLoader(
     cifar10_train,
     #simclr_train_dataset,
     batch_size=args.batch_size,
     shuffle=True,
     num_workers=args.workers,
-    collate_fn=lambda x: (tuple(xc.to(args.device) for xc in default_collate(x))),
     pin_memory=True,
     drop_last=True,
 )
@@ -155,6 +153,9 @@ top5_accuracies = []
 losses = []
 train_iterator = tqdm(cifar10_trainloader)
 for images, labels in train_iterator:
+    images = images.to(args.device)
+    labels = labels.to(args.device)
+
     opt.zero_grad()
     logits = model(images)
     loss = criterion(logits, labels)
