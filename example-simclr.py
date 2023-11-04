@@ -122,6 +122,7 @@ model = rankme_reprod.models.LatentClassifier(
         nn.Linear(512, 10),
     ),
 )
+model = model.to(args.device)
 opt = torch.optim.Adam(
     model.parameters(),
     #model.projector.parameters(), # optimize only the projector network
