@@ -4,14 +4,18 @@ import argparse
 import logging
 import os
 import sys
+from collections import deque
 from datetime import datetime
 
 import torch
 import torch.nn as nn
+import torchvision
 import torchvision.models
 
 from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
 
+import rankme_reprod
 from rankme_reprod.simclr.simclr import simclr, simclr_args
 from rankme_reprod.simclr.data_aug import simclr_transform
 
@@ -62,44 +66,110 @@ writer = SummaryWriter(os.path.join(
 ))
 
 
-train_dataset = torchvision.datasets.CIFAR10(args.dataset_dir,
+simclr_train_dataset = torchvision.datasets.CIFAR10(args.dataset_dir,
     train=True,
     transform=simclr_transform(32, args.n_views),
     download=True,
 )
 
-train_loader = torch.utils.data.DataLoader(
-    train_dataset, batch_size=args.batch_size,
+simclr_train_loader = torch.utils.data.DataLoader(
+    simclr_train_dataset, batch_size=args.batch_size,
     shuffle=True,
     num_workers=args.workers,
     pin_memory=True, drop_last=True,
 )
 
 # The output from ResNet is the number of features
-model = torchvision.models.resnet18(num_classes=args.featdim)
+encoder = torchvision.models.resnet18(num_classes=args.featdim)
 # Add extra fully connected layer to model
-mlpdim = model.fc.in_features
-model.fc = nn.Sequential(nn.Linear(mlpdim, mlpdim), nn.ReLU(), model.fc)
+mlpdim = encoder.fc.in_features
+encoder.fc = nn.Sequential(nn.Linear(mlpdim, mlpdim), nn.ReLU(), encoder.fc)
 
-# JIT Compile the model
-model = torch.jit.script(model)
+# JIT Compile the encoder model
+#encoder = torch.jit.script(encoder)
 
-model = model.to(args.device)
+encoder = encoder.to(args.device)
 
-optimizer = torch.optim.Adam(model.parameters(), args.lr, weight_decay=args.weight_decay)
+encoder_optimizer = torch.optim.Adam(encoder.parameters(), args.lr, weight_decay=args.weight_decay)
 
-scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
-                                                       last_epoch=-1)
+encoder_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+    encoder_optimizer,
+    T_max=len(simclr_train_loader),
+    eta_min=0,
+    last_epoch=-1,
+)
 
 simclr(
     args,
-    model,
-    optimizer,
-    scheduler,
-    train_loader,
+    encoder,
+    encoder_optimizer,
+    encoder_scheduler,
+    simclr_train_loader,
     writer=writer,
     fp16_precision=args.fp16_precision,
     device=args.device,
 )
 
-LOG.info("DONE")
+LOG.info("SimCLR complete, now optimizing on supervised training")
+
+model = rankme_reprod.models.LatentClassifier(
+    encoder=encoder,
+    projector=nn.Sequential(
+        nn.Linear(args.featdim, 512),
+        nn.ReLU(),
+        nn.Linear(512, 512),
+        nn.ReLU(),
+        nn.Linear(512, 10),
+    ),
+)
+opt = torch.optim.Adam(
+    model.parameters(),
+    #model.projector.parameters(), # optimize only the projector network
+    args.lr,
+    weight_decay=args.weight_decay,
+)
+
+
+cifar10_train = torchvision.datasets.CIFAR10(
+    args.dataset_dir,
+    transform=torchvision.transforms.ToTensor(),
+    train=True,
+    download=True,
+)
+
+cifar10_trainloader = torch.utils.data.DataLoader(
+    cifar10_train,
+    #simclr_train_dataset,
+    batch_size=args.batch_size,
+    shuffle=True,
+    num_workers=args.workers,
+    pin_memory=True, drop_last=True,
+)
+
+criterion = nn.CrossEntropyLoss().to(args.device)
+top1_accuracies = []
+top5_accuracies = []
+losses = []
+train_iterator = tqdm(cifar10_trainloader)
+for images, labels in train_iterator:
+    images = images.to(args.device)
+
+    opt.zero_grad()
+    logits = model(images)
+    loss = criterion(logits, labels)
+    loss.backward()
+    opt.step()
+    with torch.no_grad():
+        top1, top5 = rankme_reprod.evaluate.topk_accuracy(logits, labels, topk=(1, 5))
+        top1_accuracies.append(float(top1[0]))
+        top5_accuracies.append(float(top5[0]))
+        losses.append(float(loss.item()))
+        train_iterator.set_postfix_str(" | ".join([
+            f"avg. loss: {sum(losses[-10:]) / len(losses[-10:]):.05f}",
+            f"top 1 acc: {sum(top1_accuracies[-10:]) / len(top1_accuracies[-10:]):.05f}",
+            f"top 5 acc: {sum(top5_accuracies[-10:]) / len(top5_accuracies[-10:]):.05f}",
+        ]))
+
+LOG.info(f"Average loss: {sum(losses) / len(losses)}")
+LOG.info(f"Top 1 accuracy: {sum(top1_accuracies) / len(top1_accuracies)}")
+LOG.info(f"Top 5 accuracy: {sum(top5_accuracies) / len(top5_accuracies)}")

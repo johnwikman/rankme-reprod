@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from tqdm import tqdm
 
 from ..method_args import MethodArguments, MethodArg as MA
+from ..evaluate import topk_accuracy
 
 
 LOG = logging.getLogger(__name__)
@@ -14,7 +15,7 @@ LOG.addHandler(logging.NullHandler())
 
 
 simclr_args = MethodArguments(
-    epochs = MA("--epochs", default=200, type=int, metavar="N",
+    epochs = MA("--epochs", default=100, type=int, metavar="N",
                 help="number of total epochs to run"),
     batch_size = MA("-b", "--batch-size", default=256, type=int, metavar="N",
                     help="mini-batch size (default: 256), this is the total "
@@ -118,7 +119,7 @@ def simclr(args, model, optimizer, scheduler, train_loader,
                     optimizer.step()
 
                 if n_iter % 100 == 0: #args.log_every_n_steps == 0:
-                    top1, top5 = accuracy(logits, labels, topk=(1, 5))
+                    top1, top5 = topk_accuracy(logits, labels, topk=(1, 5))
                     writer.add_scalar('loss', loss, global_step=n_iter)
                     writer.add_scalar('acc/top1', top1[0], global_step=n_iter)
                     writer.add_scalar('acc/top5', top5[0], global_step=n_iter)
@@ -141,21 +142,3 @@ def simclr(args, model, optimizer, scheduler, train_loader,
             "optimizer": optimizer.state_dict(),
         }, checkpoint_path)
         LOG.info(f"Model checkpoint and metadata has been saved at {checkpoint_path}.")
-
-
-def accuracy(output, target, topk=(1,)):
-    """Computes the accuracy over the k top predictions for the specified values of k"""
-    with torch.no_grad():
-        maxk = max(topk)
-        batch_size = target.size(0)
-
-        _, pred = output.topk(maxk, 1, True, True)
-        pred = pred.t()
-        correct = pred.eq(target.view(1, -1).expand_as(pred))
-
-        res = []
-        for k in topk:
-            correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
-            res.append(correct_k.mul_(100.0 / batch_size))
-        return res
-

@@ -1,2 +1,1 @@
-from . import method_args
-from . import simclr
+from . import evaluate, method_args, models, simclr
