@@ -55,7 +55,7 @@ def rank_me(model_path, dataset_path):
         
         for batch in tqdm(dataloader):
             images, labels = batch
-            images = torch.flatten(images, start_dim=1)
+            #images = torch.flatten(images, start_dim=1)
             #images = images.to(device)
             #labels = labels.to(device)
             output = model(images)
@@ -90,8 +90,9 @@ def get_rank(model_output):
 if __name__ == '__main__':
     # read in a basic dataset, create a basic model, and run rankme on it
 
-    dataset_path = "_datasets/cifar-10-batches-py"
+    dataset_path = "_datasets"
 
+    """
     test_model = nn.Sequential(
         nn.Linear(3072, 512),
         nn.ReLU(),
@@ -101,6 +102,8 @@ if __name__ == '__main__':
     test_model_path = "_models/test_model"
 
     torch.save(test_model, test_model_path)
+    """
+    test_model_path = "_models/simclr_resnet18.pth.tar"
 
     rank = rank_me(test_model_path, dataset_path)
 
