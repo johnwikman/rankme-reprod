@@ -125,6 +125,7 @@ def main():
 
     model_path = os.path.join(args.model_dir, "simclr_resnet18.pth.tar")
     LOG.info(f"Saving model to {model_path}.")
+    os.makedirs(args.model_dir, exist_ok=True)
     torch.save(model, model_path)
 
     LOG.info("Done. Exiting.")
