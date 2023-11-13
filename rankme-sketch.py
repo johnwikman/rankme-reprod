@@ -6,16 +6,12 @@ import torch.nn as nn
 from torchvision.models import resnet18, resnet50
 
 
-class Identity(nn.Module):
-    def forward(x): return x
-
-
 def main():
     N_CLASSES = 1000
 
     encoder = resnet18(num_classes=8192)
     reprfeats = encoder.fc.in_features
-    encoder.fc = Identity() # bypass the FC off
+    encoder.fc = nn.Identity() # bypass the FC off
 
     projector = nn.Sequential(
         nn.Linear(reprfeats, 8192)

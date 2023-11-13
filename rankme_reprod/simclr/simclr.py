@@ -132,13 +132,4 @@ def simclr(args, model, optimizer, scheduler, train_loader,
                 scheduler.step()
             LOG.debug(f"Epoch: {epoch_counter}\tLoss: {loss}\tTop1 accuracy: {top1[0]}")
 
-        LOG.info("Training has finished.")
-        # save model checkpoints
-        checkpoint_path = os.path.join(writer.log_dir, f"checkpoint_{args.epochs}.pth.tar")
-        torch.save({
-            "epoch": args.epochs,
-            "arch": "resnet18 (?)",
-            "state_dict": model.state_dict(),
-            "optimizer": optimizer.state_dict(),
-        }, checkpoint_path)
-        LOG.info(f"Model checkpoint and metadata has been saved at {checkpoint_path}.")
+        return model
