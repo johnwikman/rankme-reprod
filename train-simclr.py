@@ -114,20 +114,18 @@ def main():
 
     LOG.info("Starting SimCLR training")
 
-    simclr(args, model, optimizer, scheduler, train_loader,
+    model = simclr(args, model, optimizer, scheduler, train_loader,
         writer=writer,
         fp16_precision=args.fp16_precision,
         device=args.device,
     )
+    model = model.to("cpu")
 
     LOG.info("SimCLR complete")
 
     model_path = os.path.join(args.model_dir, "simclr_resnet18.pth.tar")
     LOG.info(f"Saving model to {model_path}.")
-    torch.save({
-        "args": vars(args),
-        "model": model,
-    }, model_path)
+    torch.save(model, model_path)
 
     LOG.info("Done. Exiting.")
 
