@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     DEFAULT_DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
+if __name__ == "__main__":
     parser = argparse.ArgumentParser("Example of using the SimCLR functionality")
     parser.add_argument("-v", "--verbose", dest="verbosity", action="count", default=0)
     parser.add_argument("-q", "--quiet", dest="log_stderr", action="store_false", help="Do not output log messages to stderr.")
