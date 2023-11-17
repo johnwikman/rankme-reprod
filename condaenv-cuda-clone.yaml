@@ -1,0 +1,19 @@
+name: rankme-reprod-cuda
+channels:
+  - conda-forge
+  - pytorch
+  - nvidia
+dependencies:
+  - python
+  - scipy
+  - numpy
+  - matplotlib
+  - pandas
+  - pyyaml
+  - tqdm
+  - make
+  - pip
+  - pytorch>=2
+  - pytorch-cuda=11.7
+  - torchvision
+  - tensorboard
