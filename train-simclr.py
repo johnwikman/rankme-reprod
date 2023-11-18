@@ -43,6 +43,10 @@ def main():
 
     args = parser.parse_args()
 
+
+    #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = args.device
+
     # Setup the root logger
     logging.getLogger().setLevel(LOG_LEVELS[min(args.verbosity, len(LOG_LEVELS)-1)])
     LOG_FMT = logging.Formatter("[%(asctime)s %(name)s:%(lineno)d %(levelname)s]: %(message)s")
@@ -81,13 +85,13 @@ def main():
     encoder = torchvision.models.resnet18(num_classes=2048)
 
     projector_in_dim = encoder.fc.in_features
+
     projector = nn.Sequential(
         nn.Linear(projector_in_dim, 2048),
         nn.ReLU(), # 2048
         nn.Linear(2048, 2048),
         nn.ReLU(), # 2048
         nn.Linear(2048, 1024),
-        #nn.ReLU(), # 1024
     )
     encoder.fc = nn.Identity()
 
@@ -95,7 +99,7 @@ def main():
         encoder=encoder,
         projector=projector,
     )
-    model = model.to(args.device)
+    model = model.to(device)
 
     optimizer = rankme_reprod.optimizers.LARS(
         model.parameters(),
@@ -117,7 +121,7 @@ def main():
     model = simclr(args, model, optimizer, scheduler, train_loader,
         writer=writer,
         fp16_precision=args.fp16_precision,
-        device=args.device,
+        device=device,
     )
     model = model.to("cpu")
 

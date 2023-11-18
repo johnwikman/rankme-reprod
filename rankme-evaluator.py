@@ -92,19 +92,8 @@ if __name__ == '__main__':
 
     dataset_path = "_datasets"
 
-    """
-    test_model = nn.Sequential(
-        nn.Linear(3072, 512),
-        nn.ReLU(),
-        nn.Linear(512, 100),
-    )
-
-    test_model_path = "_models/test_model"
-
-    torch.save(test_model, test_model_path)
-    """
     test_model_path = "_models/simclr_resnet18.pth.tar"
 
     rank = rank_me(test_model_path, dataset_path)
 
-    print(rank)
+    print("rank of model", rank)
