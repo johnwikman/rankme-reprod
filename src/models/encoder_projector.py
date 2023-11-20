@@ -4,8 +4,10 @@ import torch.nn as nn
 
 class EncoderProjector(nn.Module):
     """
-    Classifier with latent state, as described in the RankMe paper.
+    Used as a wrapper around a models describred in the RankeMe paper.
+    Enables a modular way to swap out the encoder and projector.
     """
+
     def __init__(self, encoder, projector):
         super().__init__()
         self.encoder = encoder
@@ -17,5 +19,6 @@ class EncoderProjector(nn.Module):
 
     def encode(self, x):
         return self.encoder(x)
+
     def project(self, z):
         return self.projector(z)

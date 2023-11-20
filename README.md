@@ -1,20 +1,31 @@
 # Reproducability Study for RankMe (2023)
 Reproducing and extending the results from RankMe (2023)
 
-
-This is a change
-
 Papers and interesting links:
 
 * SimCLR paper: https://proceedings.mlr.press/v119/chen20j.html
 * SimCLR source code: https://github.com/google-research/simclr
 * A PyTorch version of SimCLR: https://github.com/sthalles/SimCLR
 
+# How to?
+
+The [main](main.py) script is responsible for communication with the package contained in `src`.
+We have spread out default values all over the code to make a deterministic process feel more like a black box. Enjoy!
+
+Do like this:
+```bash
+python main.py --verbose --device=cuda --epochs=5
+```
+
+## Dependencies
+
+> **NOTE:** Outdated, going to fix MLFlow our savior.
+
 
 Install CUDA dependencies with
 ```sh
-conda create -n rankme-cuda
-conda activate rankme-cuda
+conda create -n rankme
+conda activate rankme
 conda install pytorch torchvision torchaudio pytorch-cuda=11.8 tqdm pyyaml -c pytorch -c nvidia
 conda install tensorboard
 ```
