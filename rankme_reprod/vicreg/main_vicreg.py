@@ -207,14 +207,22 @@ def adjust_learning_rate(args, optimizer, loader, step):
 
 
 class VICReg(nn.Module):
-    def __init__(self, args):
+    def __init__(self,
+                 sim_coeff=25.0,
+                 std_coeff=25.0,
+                 cov_coeff=1.0,
+                 batch_size=512):
         super().__init__()
-        self.args = args
-        self.num_features = int(args.mlp.split("-")[-1])
-        self.backbone, self.embedding = resnet.__dict__[args.arch](
-            zero_init_residual=True
-        )
-        self.projector = Projector(args, self.embedding)
+        #self.args = args
+        self.sim_coeff = 25.0
+        self.std_coeff = 25.0
+        self.cov_coeff = 1.0
+        self.batch_size = batch_size
+        #self.num_features = int(args.mlp.split("-")[-1])
+        #self.backbone, self.embedding = resnet.__dict__[args.arch](
+        #    zero_init_residual=True
+        #)
+        #self.projector = Projector(args, self.embedding)
 
     def forward(self, x, y):
         # So this is the algorithm:
@@ -248,9 +256,9 @@ class VICReg(nn.Module):
         ) + off_diagonal(cov_y).pow_(2).sum().div(self.num_features)
 
         loss = (
-            self.args.sim_coeff * repr_loss
-            + self.args.std_coeff * std_loss
-            + self.args.cov_coeff * cov_loss
+            self.sim_coeff * repr_loss
+            + self.std_coeff * std_loss
+            + self.cov_coeff * cov_loss
         )
         return loss
 
