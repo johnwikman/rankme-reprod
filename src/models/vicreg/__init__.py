@@ -1,4 +1,4 @@
-#from . import vicreg
+from . import vicreg
 
 __commit__ = "4e12602fd495af83efd1631fbe82523e6db092e0"
 __source__ = "https://github.com/facebookresearch/vicreg"
