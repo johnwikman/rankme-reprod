@@ -4,6 +4,7 @@ A wrapper class for SimCLR training.
 
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from tqdm import tqdm
 
@@ -13,6 +14,60 @@ import logging
 
 LOG = logging.getLogger(__name__)
 LOG.addHandler(logging.NullHandler())
+
+
+class SimCLRLoss(nn.Module):
+    """
+    Implements the Info NCE loss that is used in SimCLR. Use this as:
+
+        criterion = SimCLRLoss()
+        x, y = augment1(imgs), augment2(imgs)
+        loss = criterion(x, y)
+    """
+    def __init__(self, temperature=0.07):
+        super().__init__()
+        self.register_buffer("temperature", torch.tensor(temperature, dtype=torch.float32))
+
+    def forward(self, x, y):
+        assert x.shape == y.shape
+        assert len(x.shape) == 2
+        batch_size, embedding_dim = x.shape
+        device = self.temperature.device
+        features = torch.cat([x, y], dim=0)
+
+        labels = torch.cat([torch.arange(batch_size) for _ in range(n_views)], dim=0)
+        labels = (labels.unsqueeze(0) == labels.unsqueeze(1)).float()
+        labels = labels.to(device)
+
+        features = F.normalize(features, dim=1)
+
+        similarity_matrix = torch.matmul(features, features.T)
+        # TODO: leaving debugging code in for now
+        # assert similarity_matrix.shape == (n_views * batch_size, n_views * batch_size)
+        # assert similarity_matrix.shape == labels.shape
+
+        # discard the main diagonal from both: labels and similarities matrix
+        mask = torch.eye(labels.shape[0], dtype=torch.bool).to(device)
+        labels = labels[~mask].view(labels.shape[0], -1)
+        similarity_matrix = similarity_matrix[~mask].view(
+            similarity_matrix.shape[0], -1
+        )
+        # assert similarity_matrix.shape == labels.shape
+
+        # select and combine multiple positives
+        positives = similarity_matrix[labels.to(torch.bool)].view(labels.shape[0], -1)
+
+        # select only the negatives the negatives
+        negatives = similarity_matrix[~labels.to(torch.bool)].view(
+            similarity_matrix.shape[0], -1
+        )
+
+        logits = torch.cat([positives, negatives], dim=1)
+        labels = torch.zeros(logits.shape[0], dtype=torch.long).to(device)
+
+        logits = logits / self.temperature
+        return logits, labels
+
 
 
 class SimCLR:
