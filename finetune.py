@@ -21,35 +21,43 @@ Lastly, we should
 import torch
 from torchvision import datasets, transforms
 from rankme_reprod.data_aug import BYOLTransform
+from load_dataset import load_dataset
 
-def finetune_pipeline(model_path, dataset_path):
+def finetune_pipeline(model_path, dataset_path, dataset_name):
 
     # load in data thank you chatgpt
 
     # Define a transform to normalize the data
+    '''
     transform = transforms.Compose([
                                     transforms.Grayscale(num_output_channels=3),
                                     transforms.ToTensor(),
                                     transforms.Normalize((0.5,), (0.5,)) # nödvändigt? har för mig att resnet har dedikerade normaliseringsparametrar
                                     ])
+    '''
 
+    trainset = load_dataset(dataset_path, dataset_name=dataset_name) # should probably take a parameter for whether to load in train or test data
+
+    testset = load_dataset(dataset_path, dataset_name=dataset_name)
+
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=64, shuffle=True)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=True)
 
     # Download and load the training data
-    trainset = datasets.FashionMNIST('_datasets/fashion', download=True, train=True, transform=transform)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=64, shuffle=True)
+    #trainset = datasets.FashionMNIST('_datasets/fashion', download=True, train=True, transform=transform)
+    #trainloader = torch.utils.data.DataLoader(trainset, batch_size=64, shuffle=True)
 
     # Download and load the test data
-    testset = datasets.FashionMNIST('_datasets/fashion', download=True, train=False, transform=transform)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=True)
+    #testset = datasets.FashionMNIST('_datasets/fashion', download=True, train=False, transform=transform)
+    #testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=True)
 
     # load in model
     model = torch.load(model_path)
     
-    n_classes = 10
+    n_classes = 100
     
     model.projector = torch.nn.Linear(512, n_classes) # NOTE: Hardcoded but should be correct for resnet18
 
-    # freeze all layers except the last one
     for param in model.encoder.parameters():
         param.requires_grad = False
 
@@ -68,7 +76,7 @@ def finetune_pipeline(model_path, dataset_path):
 
             # forward + backward + optimize
 
-            outputs = model.forward(inputs)
+            outputs = model(inputs)
 
             loss = criterion(outputs, labels)
             loss.backward()
@@ -125,10 +133,12 @@ def finetune_pipeline(model_path, dataset_path):
 
 if __name__ == "__main__":
 
-    dataset_path = "_datasets/fashion"
+    dataset_path = "_datasets"
+
+    dataset_name = "CIFAR100"
 
     test_model_path = "_models/simclr_resnet18.pth.tar"
 
-    finetune_pipeline(test_model_path, dataset_path)
+    finetune_pipeline(test_model_path, dataset_path, dataset_name=dataset_name)
 
 
