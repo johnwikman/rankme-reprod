@@ -12,6 +12,7 @@ import torch.optim as optim
 import torch.utils.data as data
 import torchvision
 import torchvision.transforms as transforms
+import torchvision.datasets as datasets
 import pickle
 import os
 import numpy as np
@@ -19,9 +20,25 @@ from tqdm import tqdm
 from torch.linalg import svdvals
 from rankme_reprod.simclr.data_aug import simclr_transform
 from torch.utils.data import DataLoader, Dataset, TensorDataset
+from load_dataset import load_dataset
+import time
 
 
-def rank_me(model_path, dataset_path):
+
+
+
+def rank_me(model_path: str, dataset_path: str, ood_dataset: str, device="cpu"):
+    '''
+    Input: 
+    model_path (should pretty much always be _models/{name of saved model})
+    dataset_path (should pretty much always be _datasets)
+    ood_dataset (either 'CIFAR100' or 'iNaturalist')
+    device (device to compute on, default is cpu, can also pass cuda or MPS)
+
+    returns:
+    rank of the model on the ood dataset
+
+    '''
 
     model = torch.load(model_path)
 
@@ -31,25 +48,20 @@ def rank_me(model_path, dataset_path):
 
     model.to(device)
 
-    #dataset, labels = load_cifar10(dataset_path)
-
-    simclr_train_dataset = torchvision.datasets.CIFAR10(dataset_path,
-        train=True,
-        transform=transforms.Compose([
-            transforms.ToTensor(),
-        ]),
-        download=True,
-    )
+    train_dataset = load_dataset(dataset_path, dataset_name=ood_dataset)
 
     dataloader = DataLoader( ## NOTE: some hardcoded values here
-        simclr_train_dataset, batch_size=64,
+        train_dataset, batch_size=64,
         shuffle=True,
         num_workers=4,
         pin_memory=True, drop_last=True,
     )
 
+    
+
 
     # HERE BE FORWARD PASS
+    print("Doing forward pass on full dataset")
     all_outputs = []
     with torch.no_grad():
         
@@ -67,7 +79,11 @@ def rank_me(model_path, dataset_path):
     
     # model output is a matrix, now lets compute RankMe on it
 
+    start_time = time.time()
     rank = get_rank(model_output)
+    end_time = time.time()
+
+    print("time to compute rank", end_time - start_time)
 
     return rank
 
@@ -87,6 +103,11 @@ def get_rank(model_output):
 
     return rank
 
+
+
+
+
+
 if __name__ == '__main__':
     # read in a basic dataset, create a basic model, and run rankme on it
 
@@ -94,6 +115,8 @@ if __name__ == '__main__':
 
     test_model_path = "_models/simclr_resnet18.pth.tar"
 
-    rank = rank_me(test_model_path, dataset_path)
+    target_dataset = "CIFAR100"
+
+    rank = rank_me(test_model_path, dataset_path, target_dataset)
 
     print("rank of model", rank)
