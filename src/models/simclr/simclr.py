@@ -10,6 +10,7 @@ from tqdm import tqdm
 from ...utils.evaluate import topk_accuracy
 
 import logging
+import mlflow
 
 LOG = logging.getLogger(__name__)
 LOG.addHandler(logging.NullHandler())
@@ -21,12 +22,10 @@ class SimCLR:
         model,
         optimizer,
         scheduler,
-        writer,
         fp16_precision,
         epochs,
         batch_size,
         learning_rate,
-        weight_decay,
         temperature,
         n_views,
         device,
@@ -34,12 +33,10 @@ class SimCLR:
         self.model = model
         self.optimizer = optimizer
         self.scheduler = scheduler
-        self.writer = writer
         self.fp16_precision = fp16_precision
         self.epochs = epochs
         self.batch_size = batch_size
         self.learning_rate = learning_rate
-        self.weight_decay = weight_decay
         self.temperature = temperature
         self.n_views = n_views
         self.device = device
@@ -94,8 +91,6 @@ class SimCLR:
 
             scaler = GradScaler(enabled=True)
 
-        # save config file (this is pointless, just output the args to stdout instead)
-        # save_config_file(writer.log_dir, args)
         criterion = torch.nn.CrossEntropyLoss().to(self.device)
 
         n_iter = 0
@@ -132,16 +127,17 @@ class SimCLR:
                     loss.backward()
                     self.optimizer.step()
 
-                if n_iter % 100 == 0:  # args.log_every_n_steps == 0:
-                    top1, top5 = topk_accuracy(logits, labels, topk=(1, 5))
-                    self.writer.add_scalar("loss", loss, global_step=n_iter)
-                    self.writer.add_scalar("acc/top1", top1[0], global_step=n_iter)
-                    self.writer.add_scalar("acc/top5", top5[0], global_step=n_iter)
-                    self.writer.add_scalar(
-                        "learning_rate",
-                        self.scheduler.get_last_lr()[0],
-                        global_step=n_iter,
-                    )
+                    if n_iter % 100 == 0:  # args.log_every_n_steps == 0:
+                        top1, top5 = topk_accuracy(logits, labels, topk=(1, 5))
+
+                        mlflow.log_metric("loss", loss.item(), step=n_iter)
+                        mlflow.log_metric("acc/top1", top1[0].item(), step=n_iter)
+                        mlflow.log_metric("acc/top5", top5[0].item(), step=n_iter)
+                        mlflow.log_metric(
+                            "learning_rate",
+                            self.scheduler.get_last_lr()[0],
+                            step=n_iter,
+                        )
 
                 n_iter += 1
 
@@ -152,8 +148,12 @@ class SimCLR:
 
     def save(self, model_path):
         """
-        Save model to model_path.
+        Save model to model_path and log to MLflow.
         First, move it to CPU for compliance.
         """
         self.model.to("cpu")
         torch.save(self.model, model_path)
+
+        # Log the model to MLflow
+        # "pretraining_model" used when loading the artifact downstream
+        mlflow.pytorch.log_model(self.model, "pretraining_model")

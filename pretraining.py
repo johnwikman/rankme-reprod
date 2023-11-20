@@ -4,28 +4,28 @@ import argparse
 import logging
 import os
 import sys
-
+import mlflow
 import torch
 
-from torch.utils.tensorboard import SummaryWriter
 from collections import deque
 from datetime import datetime
 
 from src.pipeline.train_simclr import train_simclr
 
+# Setup logger
 LOG = logging.getLogger(__name__)
 LOG.addHandler(logging.NullHandler())
-
 LOG_LEVELS = [logging.INFO, logging.DEBUG]
 
 
-def main():
+def pretraining():
     """
     Main init script.
     Has to be wrapped in a main-method to be able to use multiprocessing.
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("-v", "--verbose", dest="verbosity", action="count", default=0)
+    parser.add_argument("-v", "--verbose", dest="verbosity", type=int, default=0)
+
     parser.add_argument(
         "-q",
         "--quiet",
@@ -39,9 +39,7 @@ def main():
         default=None,
         help="Output log messages to this file.",
     )
-    parser.add_argument(
-        "--tbdir", "--tensorboard-dir", dest="tensorboard_directory", default="runs"
-    )
+
     parser.add_argument("--dataset-dir", dest="dataset_dir", default="_datasets")
     parser.add_argument("--model-dir", dest="model_dir", default="_models")
     parser.add_argument(
@@ -95,7 +93,6 @@ def main():
         "--epochs",
         dest="epochs",
         type=int,
-        default=10,
         help="Number of epochs for SimCLR",
     )
 
@@ -104,7 +101,6 @@ def main():
         "--weight-decay",
         dest="weight_decay",
         type=float,
-        default=1e-6,
         help="Weight decay for SimCLR",
     )
 
@@ -117,10 +113,31 @@ def main():
         help="Number of views for SimCLR",
     )
 
-    # parser << simclr_args
+    # Parse arguments
+    args = parser.parse_args()
 
-    train_simclr(parser)
+    # insanely stupid workaround for mlflow bug
+    if mlflow.active_run():
+        mlflow.end_run()
+
+    with mlflow.start_run():
+        # Log each parameter
+        # mlflow.log_param("epochs", args.epochs)
+        # mlflow.log_param("featdim", args.featdim)
+        # mlflow.log_param("workers", args.workers)
+        # mlflow.log_param("n_views", args.n_views)
+        #
+        # # Hyperparams from the paper
+        # # TODO Grid search these
+        # mlflow.log_param("batch_size", args.batch_size)
+        # mlflow.log_param("learning_rate", args.lr)
+        # mlflow.log_param("temperature", args.temperature)
+        # mlflow.log_param("weight_decay", args.weight_decay)
+
+        # Call your training function
+        train_simclr(parser)
+        mlflow.end_run()
 
 
 if __name__ == "__main__":
-    main()
+    pretraining()

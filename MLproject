@@ -1,0 +1,22 @@
+name: rankme-reprod
+conda_env: configs/condaenv-cpu.yaml
+
+entry_points:
+  main:
+    parameters:
+      verbosity: {type: int, default: 0}
+      logfile: {type: string, default: "logs/rankme.log"}
+      dataset_dir: {type: string, default: "_datasets"}
+      model_dir: {type: string, default: "_models"}
+      device: string
+      featdim: {type: int, default: 128}
+      workers: {type: int, default: 8}
+      #quiet: {type: string, default: "True"}
+      # fp16_precision: {type: string, default: "false"} # workaround...
+      temperature: {type: float, default: 0.07}
+      batch_size: {type: int, default: 64}
+      lr: {type: float, default: 0.1}
+      epochs: {type: int, default: 10}
+      weight_decay: {type: float, default: 1e-6}
+      n_views: {type: int, default: 2}
+    command: "python pretraining.py -v {verbosity} --logfile={logfile} --dataset-dir={dataset_dir} --model-dir={model_dir} --device={device} --feat-dim={featdim} -j {workers} --temperature={temperature} --batch-size={batch_size} --learning-rate={lr} --epochs={epochs} --weight-decay={weight_decay} --n-views={n_views}"

@@ -47,15 +47,6 @@ def train_simclr(parser):
 
     LOG.debug(f"arguments: {vars(args)}")
 
-    # Setup TensorBoard writer
-    # TODO: refactor to MLFlow
-    writer = SummaryWriter(
-        os.path.join(
-            args.tensorboard_directory,
-            datetime.now().strftime("example-simclr_%Y-%m-%d_%H.%M.%S"),
-        )
-    )
-
     cifar10 = torchvision.datasets.CIFAR10(
         args.dataset_dir,
         train=True,
@@ -98,7 +89,7 @@ def train_simclr(parser):
         model.parameters(),
         lr=args.lr,
         momentum=0.9,
-        weight_decay=1e-6,
+        weight_decay=args.weight_decay,
     )
 
     # Cosine annealing scheduler
@@ -115,12 +106,10 @@ def train_simclr(parser):
         model=model,
         optimizer=optimizer,
         scheduler=scheduler,
-        writer=writer,
         fp16_precision=args.fp16_precision,
         epochs=args.epochs,
         batch_size=args.batch_size,
         learning_rate=args.lr,
-        weight_decay=args.weight_decay,
         temperature=args.temperature,
         n_views=args.n_views,
         device=device,
@@ -129,7 +118,6 @@ def train_simclr(parser):
     model.train(train_loader)
 
     LOG.info("SimCLR complete")
-
     model_path = os.path.join(args.model_dir, "simclr_resnet18.pth.tar")
     LOG.info(f"Saving model to {model_path}.")
     os.makedirs(args.model_dir, exist_ok=True)

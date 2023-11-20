@@ -17,3 +17,4 @@ dependencies:
   - pytorch-cuda=11.8
   - torchvision
   - tensorboard
+  - mlflow
