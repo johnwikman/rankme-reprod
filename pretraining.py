@@ -146,22 +146,8 @@ def pretraining():
     if mlflow.active_run():
         mlflow.end_run()
 
-    with mlflow.start_run():
-        # Log each parameter
-        # mlflow.log_param("epochs", args.epochs)
-        # mlflow.log_param("featdim", args.featdim)
-        # mlflow.log_param("workers", args.workers)
-        # mlflow.log_param("n_views", args.n_views)
-        #
-        # # Hyperparams from the paper
-        # # TODO Grid search these
-        # mlflow.log_param("batch_size", args.batch_size)
-        # mlflow.log_param("learning_rate", args.lr)
-        # mlflow.log_param("temperature", args.temperature)
-        # mlflow.log_param("weight_decay", args.weight_decay)
-
-        # Call your training function
-
+    run_name = datetime.now().strftime(f"run_%Y%m%d_%H%M%S_{args.trainer}")
+    with mlflow.start_run(run_name=run_name):
         LOG.debug(f"Loading dataset {args.dataset} with BYOL transform")
         dataset = DATASETS[args.dataset](
             dataset_dir=args.dataset_dir,
