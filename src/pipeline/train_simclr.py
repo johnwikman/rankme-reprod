@@ -49,23 +49,20 @@ def train_simclr(parser):
     LOG.debug(f"arguments: {vars(args)}")
 
 
+    # cifar10 = torchvision.datasets.CIFAR10(
+    #     args.dataset_dir,
+    #     train=True,
+    #     transform=BYOLTransform(crop_size=32),
+    #     download=True,
+    # )
 
-
-    #pretrain_dataset = load_dataset(args.dataset_dir, dataset_name="CIFAR100")
-    #image_net = torchvision.datasets.ImageFolder(
-    #    root=args.dataset_dir + "/tiny-imagenet-200/train",
-    #    transform=BYOLTransform(crop_size=32),
-    #)
-
-    pretrain_dataset = torchvision.datasets.CIFAR10(
-        args.dataset_dir,
-        train=True,
-        transform=BYOLTransform(crop_size=32),
-        download=True,
-    )
+    # this is the "in-distribution" dataset
+    # always tiny-imagenet
+    transform = BYOLTransform(crop_size=32)
+    imagenet = load_dataset(dataset_name="imagenet", transform=transform)
 
     train_loader = torch.utils.data.DataLoader(
-        pretrain_dataset,
+        imagenet,
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.workers,
