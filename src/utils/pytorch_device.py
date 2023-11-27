@@ -1,12 +1,12 @@
 import torch
 
 
-def get_device(device="gpu"):
+def get_device(device):
     """
-    Returns the best available device: CUDA, MPS, or CPU
+    Returns the best available device if unspecified: CUDA, MPS, or CPU
     """
     # Check if CUDA is available
-    if device != "cpu":
+    if device is None:
         if torch.cuda.is_available():
             return torch.device("cuda")
 
@@ -14,6 +14,9 @@ def get_device(device="gpu"):
         elif "mps" in torch.backends.__dict__ and torch.backends.mps.is_available():
             return torch.device("mps")
 
+        else:
+            return torch.device("cpu")
+
     # Default to CPU
     else:
-        return torch.device("cpu")
+        return torch.device(device)
