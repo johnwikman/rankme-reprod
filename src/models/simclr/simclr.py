@@ -28,13 +28,14 @@ class SimCLRLoss(nn.Module):
     def __init__(self, temperature=0.07):
         super().__init__()
         self.register_buffer("temperature", torch.tensor(temperature, dtype=torch.float32))
+        self.register_buffer("criterion", torch.nn.CrossEntropyLoss())
 
     def forward(self, x, y):
         assert x.shape == y.shape
         assert len(x.shape) == 2
         batch_size, embedding_dim = x.shape
         device = self.temperature.device
-        features = torch.cat([x, y], dim=0)
+        features = torch.cat([x, y], dim=0).to(device)
 
         labels = torch.cat([torch.arange(batch_size) for _ in range(n_views)], dim=0)
         labels = (labels.unsqueeze(0) == labels.unsqueeze(1)).float()
@@ -67,7 +68,7 @@ class SimCLRLoss(nn.Module):
         labels = torch.zeros(logits.shape[0], dtype=torch.long).to(device)
 
         logits = logits / self.temperature
-        return logits, labels
+        return self.criterion(logits, labels)
 
 
 
