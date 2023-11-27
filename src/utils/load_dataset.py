@@ -2,7 +2,7 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
 
-def load_dataset(dataset_path, dataset_name):
+def load_dataset(dataset_path, dataset_name, train=True):
     """
     Load an out-of-distribution dataset, either 'iNaturalist' or 'CIFAR100'.
     If the dataset is not found in the given path, it is downloaded.
@@ -23,18 +23,23 @@ def load_dataset(dataset_path, dataset_name):
 
     if dataset_name == 'CIFAR100':
         # Load or download CIFAR100
-        dataset = datasets.CIFAR100(root=dataset_path, train=True, download=True, transform=transform)
+        dataset = datasets.CIFAR100(root=dataset_path, train=train, download=True, transform=transform)
 
     elif dataset_name == 'iNaturalist':
+        if train:
         # Load or download iNaturalist
         # You can customize 'version' and 'target_type' as per your requirement
-        dataset = datasets.INaturalist(root=dataset_path, version='2021_train_mini', target_type='full', transform=transform, download=True)
+            dataset = datasets.INaturalist(root=dataset_path, version='2021_train_mini', target_type='full', transform=transform, download=True)
+        else:
+            dataset = datasets.INaturalist(root=dataset_path, version='2021_val', target_type='full', transform=transform, download=True)
 
     elif dataset_name == 'ImageNet':
         # Load or download ImageNet
         # You can customize 'split' as per your requirement
-        dataset = datasets.ImageNet(root=dataset_path, split='train', transform=transform)
-
+        if train:
+            dataset = datasets.ImageNet(root=dataset_path, split='train', transform=transform, download=True)
+        else:
+            dataset = datasets.ImageNet(root=dataset_path, split='val', transform=transform, download=True)
     else:
         raise ValueError(f"Unsupported dataset: {dataset_name}")
 

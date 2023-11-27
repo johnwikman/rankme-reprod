@@ -18,7 +18,7 @@ import os
 import numpy as np
 from tqdm import tqdm
 from torch.linalg import svdvals
-#from src.utils.data_aug import simclr_transform
+from rankme_reprod.simclr.data_aug import simclr_transform
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 from src.utils.load_dataset import load_dataset
 import time
@@ -50,10 +50,8 @@ def rank_me(model_path: str, dataset_path: str, ood_dataset: str, device="cpu"):
 
     train_dataset = load_dataset(dataset_path, dataset_name=ood_dataset)
 
-    batch_size = 64
-
     dataloader = DataLoader( ## NOTE: some hardcoded values here
-        train_dataset, batch_size=batch_size,
+        train_dataset, batch_size=64,
         shuffle=True,
         num_workers=4,
         pin_memory=True, drop_last=True,
@@ -61,26 +59,22 @@ def rank_me(model_path: str, dataset_path: str, ood_dataset: str, device="cpu"):
 
     
 
-    max_samples = 25000 # according to the article this is sufficient
-    max_batches = max_samples // batch_size + (1 if max_samples % batch_size != 0 else 0)
 
     # HERE BE FORWARD PASS
+    print("Doing forward pass on full dataset")
     all_outputs = []
     with torch.no_grad():
-        for i, batch in enumerate(tqdm(dataloader, total=max_batches)):
-            if i >= max_batches:
-                print("reached max batches")
-                break
-
-            images, _ = batch
-            # images = images.to(device)
-            # labels = labels.to(device)
-
+        
+        for batch in tqdm(dataloader):
+            images, labels = batch
+            #images = torch.flatten(images, start_dim=1)
+            #images = images.to(device)
+            #labels = labels.to(device)
             output = model(images)
             all_outputs.append(output)
 
-    model_output = torch.cat(all_outputs, dim=0)
 
+    model_output = torch.cat(all_outputs, dim=0)
     
     
     # model output is a matrix, now lets compute RankMe on it

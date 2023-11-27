@@ -1,4 +1,4 @@
-"""
+'''
 This file should take a path to a model as well as a path to a dataset
 
 It should load in the model, change the fully connected layer on the model to one matching the desired output of the dataset,
@@ -16,12 +16,12 @@ Lastly, we should
 
 # 
 
-"""
+'''
 
 import torch
 from torchvision import datasets, transforms
+from rankme_reprod.data_aug import BYOLTransform
 from src.utils.load_dataset import load_dataset
-from src.utils.data_aug import BYOLTransform
 
 def finetune_pipeline(model_path, dataset_path, dataset_name):
 
@@ -36,11 +36,12 @@ def finetune_pipeline(model_path, dataset_path, dataset_name):
                                     ])
     '''
 
-    trainset = load_dataset(dataset_path, dataset_name=dataset_name, train=True) # should probably take a parameter for whether to load in train or test data
+    trainset = load_dataset(dataset_path, dataset_name=dataset_name) # should probably take a parameter for whether to load in train or test data
 
+    testset = load_dataset(dataset_path, dataset_name=dataset_name)
 
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=64, shuffle=True)
-    
+    testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=True)
 
     # Download and load the training data
     #trainset = datasets.FashionMNIST('_datasets/fashion', download=True, train=True, transform=transform)
@@ -64,10 +65,10 @@ def finetune_pipeline(model_path, dataset_path, dataset_name):
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     criterion = torch.nn.CrossEntropyLoss()
 
-    for epoch in range(5):  # loop over the dataset multiple times
+    for epoch in range(5):  # loop over the dataset multiple times  
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
-            # get the inputs; data is a list of [inputs, labels]
+            # get the inputs; data is a list of [inputs, labels]  
             inputs, labels = data
 
             # zero the parameter gradients
@@ -80,17 +81,21 @@ def finetune_pipeline(model_path, dataset_path, dataset_name):
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
-
+            
             # print statistics
             running_loss += loss.item()
 
-            if i % 100 == 99:  # print every 100 mini-batches
-                print("[%d, %5d] loss: %.3f" % (epoch + 1, i + 1, running_loss / 100))
+            if i % 100 == 99:    # print every 100 mini-batches
 
-    print("Finished Training")
+                print('[%d, %5d] loss: %.3f' %
+                    (epoch + 1, i + 1, running_loss / 100))
+                
 
-    testset = load_dataset(dataset_path, dataset_name=dataset_name, train=False)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=True)
+
+
+
+
+    print('Finished Training')
 
     # test the model
     correct = 0
@@ -106,13 +111,28 @@ def finetune_pipeline(model_path, dataset_path, dataset_name):
 
             correct += (predicted == labels).sum().item()
 
-    print(
-        "Accuracy of the network on the 10000 test images: %d %%"
-        % (100 * correct / total)
-    )
+    print('Accuracy of the network on the 10000 test images: %d %%' % (
+        100 * correct / total))
+    
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
+
     dataset_path = "_datasets"
 
     dataset_name = "CIFAR100"
@@ -120,4 +140,5 @@ if __name__ == "__main__":
     test_model_path = "_models/simclr_resnet18.pth.tar"
 
     finetune_pipeline(test_model_path, dataset_path, dataset_name=dataset_name)
+
 
