@@ -24,6 +24,10 @@ To set it up locally, run the following command in the root of the project:
 ```sh
 # pick a favorite unused port
 mlflow server --host 127.0.0.1 --port 8080
+
+# kanske såhär
+mlflow server --backend-store-uri postgres://avnadmin:AVNS_3gVxQDkJiI0AmDebBM3@rankme-reprod-rankme.a.aivencloud.com:12005/defaultdb?sslmode=require
+
 ```
 
 Later, we will setup a URI to an external database. Very mumma!

@@ -18,6 +18,7 @@ from ..utils.data_aug import BYOLTransform
 from ..utils.pytorch_device import get_device
 from ..models import encoder_projector
 from ..utils.optimizers import LARS
+from ..utils.load_dataset import load_dataset
 
 LOG = logging.getLogger(__name__)
 LOG.addHandler(logging.NullHandler())
@@ -47,15 +48,20 @@ def train_simclr(parser):
 
     LOG.debug(f"arguments: {vars(args)}")
 
-    cifar10 = torchvision.datasets.CIFAR10(
-        args.dataset_dir,
-        train=True,
-        transform=BYOLTransform(crop_size=32),
-        download=True,
-    )
+    # cifar10 = torchvision.datasets.CIFAR10(
+    #     args.dataset_dir,
+    #     train=True,
+    #     transform=BYOLTransform(crop_size=32),
+    #     download=True,
+    # )
+
+    # this is the "in-distribution" dataset
+    # always tiny-imagenet
+    transform = BYOLTransform(crop_size=32)
+    imagenet = load_dataset(dataset_name="imagenet", transform=transform)
 
     train_loader = torch.utils.data.DataLoader(
-        cifar10,
+        imagenet,
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.workers,
