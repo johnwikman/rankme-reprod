@@ -12,10 +12,12 @@ from datetime import datetime
 from tqdm import tqdm
 
 from src.models.encoder_projector import MODELS
-#from src.pipeline.train_simclr import train_simclr
+from src.models import SimCLR, VICReg
 from src.utils.load_dataset import DATASETS
 from src.utils.logging import init_logging
-from src.models.simclr.simclr import SimCLRLoss
+from src.utils.data_aug import BYOLTransform
+from src.utils.optimizers import LARS
+from src.utils.pytorch_device import get_device
 
 # Setup logger
 LOG = logging.getLogger(__name__)
@@ -54,6 +56,14 @@ def pretraining():
     )
 
     parser.add_argument(
+        "--trainer",
+        dest="trainer",
+        choices={"simclr", "vicreg"},
+        default="simclr",
+        help="The pretraining algorithm to use",
+    )
+
+    parser.add_argument(
         "--model",
         dest="model",
         choices=MODELS.keys(),
@@ -64,7 +74,7 @@ def pretraining():
     parser.add_argument("--dataset-dir", dest="dataset_dir", default="_datasets")
     parser.add_argument("--model-dir", dest="model_dir", default="_models")
     parser.add_argument(
-        "--device", dest="device", type=torch.device, default="mps"
+        "--device", dest="device", type=get_device, default=get_device(None)
     )  # gillar du
     parser.add_argument(
         "--feat-dim", dest="featdim", type=int, default=128, help="Feature dimension"
@@ -125,15 +135,6 @@ def pretraining():
         help="Weight decay for SimCLR",
     )
 
-    # for n_views
-    parser.add_argument(
-        "--n-views",
-        dest="n_views",
-        type=int,
-        default=2,
-        help="Number of views for SimCLR",
-    )
-
     # Parse arguments
     args = parser.parse_args()
 
@@ -190,65 +191,40 @@ def pretraining():
         LOG.debug("Creating cosine annealing scheduler")
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             optimizer,
-            T_max=len(train_loader),
+            T_max=len(dataloader),
             eta_min=0,
             last_epoch=-1,
         )
 
-        if args.fp16_precision:
-            LOG.debug("Using 16-bit precision with CUDA")
-            from torch.cuda.amp import GradScaler, autocast
-            scaler = GradScaler(enabled=True)
+        common_kwargs = {
+            "model": model,
+            "optimizer": optimizer,
+            "scheduler": scheduler,
+            "fp16_precision": args.fp16_precision,
+            "epochs": args.epochs,
+            "batch_size": args.batch_size,
+            "device": args.device,
+        }
 
-        LOG.info(f"Start SimCLR training for {args.epochs} epochs.")
+        if args.trainer == "simclr":
+            trainer = SimCLR(
+                temperature=args.temperature,
+                **common_kwargs
+            )
+        elif args.trainer == "vicreg":
+            trainer = VICReg(
+                **common_kwargs
+            )
+        else:
+            raise ValueError(f"Unsupported argument: {args.vicreg}")
 
-        criterion = SimCLRLoss(args.temperature).to(args.device)
+        trainer.train(dataloader)
 
-        n_iter = 0
-        for epoch_counter in range(self.epochs):
-            for (img_x, img_y), _ in tqdm(train_loader):
-                img_x = img_x.to(args.device)
-                img_y = img_y.to(args.device)
-                self.optimizer.zero_grad()
-
-                if args.fp16_precision:
-                    with autocast(enabled=True):
-                        loss = criterion(model(img_x), model(img_y))
-                        scaler.scale(loss).backward()
-                        scaler.step(self.optimizer)
-                        scaler.update()
-                else:
-                    loss = criterion(model(img_x), model(img_y))
-                    loss.backward()
-                    self.optimizer.step()
-
-                    if n_iter % 100 == 0:  # args.log_every_n_steps == 0:
-                        top1, top5 = topk_accuracy(logits, labels, topk=(1, 5))
-
-                        mlflow.log_metric("loss", loss.item(), step=n_iter)
-                        mlflow.log_metric("acc/top1", top1[0].item(), step=n_iter)
-                        mlflow.log_metric("acc/top5", top5[0].item(), step=n_iter)
-                        mlflow.log_metric(
-                            "learning_rate",
-                            self.scheduler.get_last_lr()[0],
-                            step=n_iter,
-                        )
-
-                n_iter += 1
-
-            # warmup for the first 10 epochs
-            if epoch_counter >= 10:
-                self.scheduler.step()
-            LOG.debug(f"Epoch: {epoch_counter}\tLoss: {loss}\tTop1 accuracy: {top1[0]}")
-
-
-        LOG.info("SimCLR complete")
-        model_path = os.path.join(args.model_dir, "simclr_resnet18.pth.tar")
-        LOG.info(f"Saving model to {model_path}.")
+        model_path = os.path.join(args.model_dir, f"{args.trainer}_{args.model}.pth.tar")
         os.makedirs(args.model_dir, exist_ok=True)
-        model.save(model_path)
+        LOG.info(f"Saving model to {model_path}.")
+        trainer.save(model_path)
 
-        LOG.info("Done. Exiting.")
         mlflow.end_run()
 
 
