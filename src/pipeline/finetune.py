@@ -23,7 +23,7 @@ from torchvision import datasets, transforms
 from src.utils.load_dataset import load_dataset
 from src.utils.data_aug import BYOLTransform
 
-def finetune_pipeline(model_path, dataset_path, dataset_name):
+def finetune_pipeline(model, dataset_path, dataset_name, epochs=5):
 
     # load in data thank you chatgpt
 
@@ -52,7 +52,7 @@ def finetune_pipeline(model_path, dataset_path, dataset_name):
     #testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=True)
 
     # load in model
-    model = torch.load(model_path)
+    #model = torch.load(model_path)
     
     n_classes = 100
     
@@ -65,7 +65,7 @@ def finetune_pipeline(model_path, dataset_path, dataset_name):
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     criterion = torch.nn.CrossEntropyLoss()
 
-    for epoch in range(5):  # loop over the dataset multiple times
+    for epoch in range(epochs):  # loop over the dataset multiple times
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
             # get the inputs; data is a list of [inputs, labels]
@@ -87,6 +87,7 @@ def finetune_pipeline(model_path, dataset_path, dataset_name):
 
             if i % 100 == 99:  # print every 100 mini-batches
                 print("[%d, %5d] loss: %.3f" % (epoch + 1, i + 1, running_loss / 100))
+                running_loss = 0.0
 
     print("Finished Training")
 
@@ -108,6 +109,7 @@ def finetune_pipeline(model_path, dataset_path, dataset_name):
         "Accuracy of the network on the 10000 test images: %d %%"
         % (100 * correct / total)
     )
+    return 100 * correct / total
 
 
 if __name__ == "__main__":
