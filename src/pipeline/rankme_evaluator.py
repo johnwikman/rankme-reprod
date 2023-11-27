@@ -27,7 +27,7 @@ import time
 
 
 
-def rank_me(model: nn.Module, dataset: str, device="cpu"):
+def rank_me(model: nn.Module, dataset, device="cpu"):
     '''
     Input: 
     model_path (should pretty much always be _models/{name of saved model})
@@ -51,12 +51,18 @@ def rank_me(model: nn.Module, dataset: str, device="cpu"):
     #train_dataset = load_dataset(dataset_path, dataset_name=ood_dataset)
     train_dataset = dataset
 
-    dataloader = DataLoader( ## NOTE: some hardcoded values here
-        train_dataset, batch_size=64,
-        shuffle=True,
-        num_workers=4,
-        pin_memory=True, drop_last=True,
-    )
+    if isinstance(dataset, Dataset):
+        # its a dataset as we should expect
+        dataloader = DataLoader( ## NOTE: some hardcoded values here
+            train_dataset, batch_size=64,
+            shuffle=True,
+            num_workers=4,
+            pin_memory=True, drop_last=True,
+        )
+    elif isinstance(dataset, DataLoader):
+        pass
+    else:
+        raise ValueError("dataset is not a dataset or a dataloader")
 
     
 
@@ -73,6 +79,9 @@ def rank_me(model: nn.Module, dataset: str, device="cpu"):
             #labels = labels.to(device)
             output = model(images)
             all_outputs.append(output)
+
+            if len(all_outputs) > 25600/64:
+                break
 
 
     model_output = torch.cat(all_outputs, dim=0)
