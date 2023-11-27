@@ -48,6 +48,7 @@ def train_simclr(parser):
 
     LOG.debug(f"arguments: {vars(args)}")
 
+
     # cifar10 = torchvision.datasets.CIFAR10(
     #     args.dataset_dir,
     #     train=True,

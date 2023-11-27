@@ -18,16 +18,16 @@ import os
 import numpy as np
 from tqdm import tqdm
 from torch.linalg import svdvals
-from rankme_reprod.simclr.data_aug import simclr_transform
+#from src.utils.data_aug import simclr_transform
 from torch.utils.data import DataLoader, Dataset, TensorDataset
-from load_dataset import load_dataset
+from src.utils.load_dataset import load_dataset
 import time
 
 
 
 
 
-def rank_me(model_path: str, dataset_path: str, ood_dataset: str, device="cpu"):
+def rank_me(model: nn.Module, dataset: str, device="cpu"):
     '''
     Input: 
     model_path (should pretty much always be _models/{name of saved model})
@@ -40,7 +40,7 @@ def rank_me(model_path: str, dataset_path: str, ood_dataset: str, device="cpu"):
 
     '''
 
-    model = torch.load(model_path)
+    #model = torch.load(model_path)
 
     model.eval()
 
@@ -48,7 +48,8 @@ def rank_me(model_path: str, dataset_path: str, ood_dataset: str, device="cpu"):
 
     model.to(device)
 
-    train_dataset = load_dataset(dataset_path, dataset_name=ood_dataset)
+    #train_dataset = load_dataset(dataset_path, dataset_name=ood_dataset)
+    train_dataset = dataset
 
     dataloader = DataLoader( ## NOTE: some hardcoded values here
         train_dataset, batch_size=64,
