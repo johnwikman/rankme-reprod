@@ -104,6 +104,30 @@ def pretraining():
     )
 
     parser.add_argument(
+        "--sim-coeff",
+        dest="sim_coeff",
+        type=float,
+        default=25.0,
+        help="HYPERPARAMETER: Similarity coefficient of VICReg",
+    )
+
+    parser.add_argument(
+        "--std-coeff",
+        dest="std_coeff",
+        type=float,
+        default=25.0,
+        help="HYPERPARAMETER: Standard deviation coefficient of VICReg",
+    )
+
+    parser.add_argument(
+        "--cov-coeff",
+        dest="cov_coeff",
+        type=float,
+        default=1.0,
+        help="HYPERPARAMETER: Covariance coefficient of VICReg",
+    )
+
+    parser.add_argument(
         "--batch-size",
         dest="batch_size",
         type=int,
@@ -199,6 +223,9 @@ def pretraining():
             )
         elif args.trainer == "vicreg":
             trainer = VICReg(
+                sim_coeff=args.sim_coeff,
+                std_coeff=args.std_coeff,
+                cov_coeff=args.cov_coeff,
                 **common_kwargs
             )
         else:
