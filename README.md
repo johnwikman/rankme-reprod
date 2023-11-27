@@ -43,6 +43,9 @@ mlflow run . -P device="mps"
 
 # vill man ha fler parameterar får man lägga till fler -P
 mlflow run . -P device="mps" -P epochs=100 -P batch_size=64 # osv
+
+# om John måste köra den:
+mlflow run . -P device="cuda" -P workers=16 --env-manager local
 ```
 
 Currently, all parameters have default values except `device`. These values are logged as "parameters" within an MLFlow run. In the experiments, we log "metrics", which are running values that change over time.

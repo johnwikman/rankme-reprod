@@ -3,6 +3,7 @@
 _datasets/
 runs/
 _models/
+mlruns/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
