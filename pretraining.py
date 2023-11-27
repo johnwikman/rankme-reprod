@@ -148,6 +148,7 @@ def pretraining():
 
     run_name = datetime.now().strftime(f"run_%Y%m%d_%H%M%S_{args.trainer}")
     with mlflow.start_run(run_name=run_name):
+        mlflow.set_tag("mlflow.runName", run_name)
         LOG.debug(f"Loading dataset {args.dataset} with BYOL transform")
         dataset = DATASETS[args.dataset](
             dataset_dir=args.dataset_dir,
