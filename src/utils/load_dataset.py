@@ -2,14 +2,14 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
 DATASETS = {
-    "cifar10": lambda dataset_dir, transform, train=True, download=True: \
-        datasets.CIFAR10(
-            dataset_dir,
-            train=train,
-            transform=transform,
-            download=download,
-        ),
+    "cifar10": lambda dataset_dir, transform, train=True, download=True: datasets.CIFAR10(
+        dataset_dir,
+        train=train,
+        transform=transform,
+        download=download,
+    ),
 }
+
 
 def load_dataset(dataset_name, transform, dataset_path="_datasets/"):
     """
