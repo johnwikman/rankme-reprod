@@ -163,7 +163,9 @@ def pretraining():
     args = parser.parse_args()
 
     # Initialize arguments
-    init_logging(verbosity=args.verbosity, log_stderr=args.log_stderr, logfile=args.logfile)
+    init_logging(
+        verbosity=args.verbosity, log_stderr=args.log_stderr, logfile=args.logfile
+    )
     LOG.debug(f"arguments: {vars(args)}")
 
     # insanely stupid workaround for mlflow bug
@@ -218,27 +220,27 @@ def pretraining():
         }
 
         if args.trainer == "simclr":
-            trainer = SimCLR(
-                temperature=args.temperature,
-                **common_kwargs
-            )
+            trainer = SimCLR(temperature=args.temperature, **common_kwargs)
         elif args.trainer == "vicreg":
             trainer = VICReg(
                 sim_coeff=args.sim_coeff,
                 std_coeff=args.std_coeff,
                 cov_coeff=args.cov_coeff,
-                **common_kwargs
+                **common_kwargs,
             )
         else:
             raise ValueError(f"Unsupported argument: {args.vicreg}")
 
         trainer.train(dataloader)
 
-        model_path = os.path.join(args.model_dir, f"{args.trainer}_{args.model}.pth.tar")
+        model_path = os.path.join(
+            args.model_dir, f"{args.trainer}_{args.model}.pth.tar"
+        )
         os.makedirs(args.model_dir, exist_ok=True)
         LOG.info(f"Saving model to {model_path}.")
         trainer.save(model_path)
 
+        mlflow.set_tag("status", "succeeded")
         mlflow.end_run()
 
 

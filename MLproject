@@ -14,8 +14,6 @@ entry_points:
       device: string
       featdim: {type: int, default: 128}
       workers: {type: int, default: 8}
-      #quiet: {type: string, default: "True"}
-      # fp16_precision: {type: string, default: "false"} # workaround...
       temperature: {type: float, default: 0.07}
       sim_coeff: {type: float, default: 25.0}
       std_coeff: {type: float, default: 25.0}
