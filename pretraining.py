@@ -175,7 +175,7 @@ def pretraining():
         mlflow.set_tag("mlflow.runName", run_name)
         LOG.debug(f"Loading dataset {args.dataset} with BYOL transform")
         dataset = DATASETS[args.dataset](
-            dataset_dir=args.dataset_dir,
+            dataset_path=args.dataset_dir,
             transform=BYOLTransform(crop_size=32),
         )
         dataloader = torch.utils.data.DataLoader(
