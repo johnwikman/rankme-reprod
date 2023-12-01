@@ -27,6 +27,7 @@ def main():
             "-P", "verbosity=0",
             "-P", "dataset=imagenet",
             "-P", "eval_dataset=imagenet",
+            "-P", "epochs=100",
         ]
         for k,v in params.items():
             cmd += ["-P", f"{k}={v}"]
