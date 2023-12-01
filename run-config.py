@@ -37,7 +37,7 @@ def main():
 
         print(f"running command: \"{' '.join(cmd)}\"")
         with open("run.stdout", "a+") as fout, open("run.stderr", "a+") as ferr:
-            ret = subprocess.run(cmd, stdout=fout, stderr=ferr, shell=True, env=os.environ)
+            ret = subprocess.run(cmd, stdout=fout, stderr=ferr, env=os.environ)
         if ret.returncode != 0:
             print("WARNING: Non-zero return code!")
 
