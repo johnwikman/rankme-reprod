@@ -56,6 +56,14 @@ def pretraining():
     )
 
     parser.add_argument(
+        "--eval-dataset",
+        dest="eval_dataset",
+        choices=DATASETS.keys(),
+        default=None,
+        help="Dataset to evaluate on during training",
+    )
+
+    parser.add_argument(
         "--trainer",
         dest="trainer",
         choices={"simclr", "vicreg"},
@@ -231,6 +239,21 @@ def pretraining():
             )
         else:
             raise ValueError(f"Unsupported argument: {args.vicreg}")
+
+        if args.eval_dataset is not None:
+            eval_dataset = DATASETS[args.eval_dataset](
+                dataset_path=args.dataset_dir,
+                transform=torchvision.transforms.ToTensor(),
+            )
+            eval_dataloader = torch.utils.data.DataLoader(
+                eval_dataset,
+                batch_size=args.batch_size,
+                shuffle=True,
+                num_workers=args.workers,
+                pin_memory=True,
+                drop_last=True,
+            )
+            trainer.set_eval_dataloader(eval_dataloader)
 
         trainer.train(dataloader)
 
