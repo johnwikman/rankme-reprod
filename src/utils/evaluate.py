@@ -35,6 +35,16 @@ def rank_me(model: nn.Module,
     """
     Performs the RankMe evaluation on the specified dataloader.
     """
+
+    if not isinstance(dataloader, torch.utils.data.DataLoader):
+        # its a dataset as we should expect
+        dataloader = DataLoader( ## NOTE: some hardcoded values here
+            dataloader, batch_size=64,
+            shuffle=True,
+            num_workers=4,
+            pin_memory=True, drop_last=True,
+        )
+
     if maxlen is None:
         maxlen = len(dataloader)
     device = get_device(device)
