@@ -6,6 +6,7 @@ import os
 import sys
 import mlflow
 import torch
+import torchvision
 
 from collections import deque
 from datetime import datetime
