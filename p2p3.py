@@ -63,6 +63,7 @@ def main():
         run = client.get_run(run_id)
 
         model = mlflow.pytorch.load_model(model_uri)
+        model.to(args.device)
 
         if not ('rank' in run.data.metrics):
             LOG.info("No rank found for run: ", run_id, "computing...")
