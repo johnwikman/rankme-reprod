@@ -65,8 +65,6 @@ class VICReg(ImagePretrainer):
             [self.batch_size, self.batch_size]
         )
 
-        batch_size, num_features = x.shape
-
         repr_loss = F.mse_loss(x, y)
 
         # Convert x and y to have batch mean µ = 0
@@ -77,11 +75,7 @@ class VICReg(ImagePretrainer):
         std_y = torch.sqrt(y.var(dim=0) + 0.0001)
         std_loss = torch.mean(F.relu(1 - std_x)) / 2 + torch.mean(F.relu(1 - std_y)) / 2
 
-        cov_x = (x.T @ x) / (batch_size - 1)
-        cov_y = (y.T @ y) / (batch_size - 1)
-        cov_loss = off_diagonal(cov_x).pow_(2).sum().div(
-            num_features
-        ) + off_diagonal(cov_y).pow_(2).sum().div(num_features)
+        cov_loss = self.covariance_loss(x, y)
 
         loss = (
             self.sim_coeff * repr_loss
@@ -89,6 +83,38 @@ class VICReg(ImagePretrainer):
             + self.cov_coeff * cov_loss
         )
         return loss, {}
+
+    def covariance_loss(self, x, y):
+        """Returns the covariance loss, this should be overridden by VICReg-ctr and VICReg-exp."""
+        batch_size, num_features = x.shape
+
+        cov_x = (x.T @ x) / (batch_size - 1)
+        cov_y = (y.T @ y) / (batch_size - 1)
+        cov_loss = off_diagonal(cov_x).pow_(2).sum().div(
+            num_features
+        ) + off_diagonal(cov_y).pow_(2).sum().div(num_features)
+
+        return cov_loss
+
+
+class VICRegExp(VICReg):
+    def __init__(self, temperature=1.0, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.temperature = temperature
+
+    def covariance_loss(self, x, y):
+        """Different loss according to RankMe Paper."""
+        batch_size, num_features = x.shape
+
+        cov_x = (x.T @ x) / (batch_size - 1)
+        cov_y = (y.T @ y) / (batch_size - 1)
+        cov_loss = torch.log(
+            torch.exp(off_diagonal(cov_x) / self.temperature).sum() +
+            torch.exp(off_diagonal(cov_y) / self.temperature).sum() +
+            1e-7
+        ).div(num_features)
+
+        return cov_loss
 
 
 def off_diagonal(x):

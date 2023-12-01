@@ -53,7 +53,7 @@ class BYOLTransform:
         (transforms.Compose, transforms.Compose)
             The transforms for the two views.
         """
-        common_transforms = [
+        common_in = [
             transforms.RandomResizedCrop(size=crop_size),
             transforms.RandomHorizontalFlip(p=0.5),
             transforms.RandomApply(
@@ -86,7 +86,6 @@ class BYOLTransform:
             ),
             # v1_solarization_probability = 0.0
             # pass, no solarization will be done here
-            transforms.ToTensor(),
         ]
 
         view2_transforms = [
@@ -105,10 +104,14 @@ class BYOLTransform:
                 threshold=0.5,
                 p=0.2,
             ),
+        ]
+
+        common_out = [
             transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ]
 
         return (
-            transforms.Compose(common_transforms + view1_transforms),
-            transforms.Compose(common_transforms + view2_transforms),
+            transforms.Compose(common_in + view1_transforms + common_out),
+            transforms.Compose(common_in + view2_transforms + common_out),
         )
