@@ -103,7 +103,7 @@ def finetune_pipeline(model, trainset, testset, epochs=5,
 
             correct += (predicted == labels).sum().item()
 
-    LOG.info(f"Accuracy of the network on the 10000 test images: {100 * correct / total} %%")
+    LOG.info(f"Accuracy of the network on the 10000 test images: {100 * correct / total}%")
     return 100 * correct / total
 
 
