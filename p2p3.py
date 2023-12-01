@@ -60,8 +60,10 @@ def main():
 
     for run_iter in all_successful_runs.iterrows():
         run_id = run_iter[1]['run_id']
+        run_name = run_iter[1]['tags.mlflow.runName']
         model_uri = f"runs:/{run_id}/pretraining_model/"
         run = client.get_run(run_id)
+        LOG.info(f"Checking run {run_name}")
 
         model = mlflow.pytorch.load_model(model_uri)
         model.to(args.device)
@@ -74,7 +76,7 @@ def main():
                 mlflow.log_metric("rank", rank)
                 mlflow.end_run()
                 LOG.info(f"rank estimation: {rank} for run: {run_id}")
-        
+
         if not ('CIFAR100_accuracy' in run.data.metrics):
             LOG.info(f"No CIFAR100 accuracy found for run: {run_id}, finetuning over {args.finetune_epochs} epochs...")
             model.train()
