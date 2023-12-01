@@ -67,7 +67,7 @@ def rank_me(model: nn.Module,
 
 
 def get_rank(model_output):
-    singular_values = svdvals(model_output)
+    singular_values = torch.linalg.svdvals(model_output)
     # singular values is now a vector of singular values
     # convert to distribution
     normalization_factor = torch.sum(singular_values)
