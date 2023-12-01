@@ -1,7 +1,7 @@
 import logging
-
 import torch
 import torch.nn as nn
+from tqdm import tqdm
 
 from .pytorch_device import get_device
 
