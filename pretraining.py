@@ -6,6 +6,7 @@ import os
 import sys
 import mlflow
 import torch
+import torchvision
 
 from collections import deque
 from datetime import datetime
@@ -53,6 +54,14 @@ def pretraining():
         choices=DATASETS.keys(),
         default=list(DATASETS.keys())[0],
         help="Dataset to train on",
+    )
+
+    parser.add_argument(
+        "--eval-dataset",
+        dest="eval_dataset",
+        choices=DATASETS.keys(),
+        default=None,
+        help="Dataset to evaluate on during training",
     )
 
     parser.add_argument(
@@ -175,7 +184,7 @@ def pretraining():
         mlflow.set_tag("mlflow.runName", run_name)
         LOG.debug(f"Loading dataset {args.dataset} with BYOL transform")
         dataset = DATASETS[args.dataset](
-            dataset_dir=args.dataset_dir,
+            dataset_path=args.dataset_dir,
             transform=BYOLTransform(crop_size=32),
         )
         dataloader = torch.utils.data.DataLoader(
@@ -232,6 +241,21 @@ def pretraining():
         else:
             raise ValueError(f"Unsupported argument: {args.vicreg}")
 
+        if args.eval_dataset is not None:
+            eval_dataset = DATASETS[args.eval_dataset](
+                dataset_path=args.dataset_dir,
+                transform=torchvision.transforms.ToTensor(),
+            )
+            eval_dataloader = torch.utils.data.DataLoader(
+                eval_dataset,
+                batch_size=args.batch_size,
+                shuffle=True,
+                num_workers=args.workers,
+                pin_memory=True,
+                drop_last=True,
+            )
+            trainer.set_eval_dataloader(eval_dataloader)
+
         trainer.train(dataloader)
 
         model_path = os.path.join(args.model_dir, f"{args.trainer}_{args.model}.pth.tar")
@@ -243,5 +267,8 @@ def pretraining():
 
 
 if __name__ == "__main__":
-    os.environ["MLFLOW_TRACKING_URI"] = "http://127.0.0.1:5000"
+    if "MLFLOW_TRACKING_URI" not in os.environ:
+        raise EnvironmentError("Environment variable MLFLOW_TRACKING_URI not "
+                               "set. Example: set it with\n"
+                               "export MLFLOW_TRACKING_URI=\"http://127.0.0.1:8080\"")
     pretraining()

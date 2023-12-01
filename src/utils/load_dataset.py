@@ -1,15 +1,30 @@
+import os
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
+# Default root for datasets
+DROOT = "_datasets"
+
 DATASETS = {
-    "cifar10": lambda dataset_dir, transform, train=True, download=True: \
-        datasets.CIFAR10(
-            dataset_dir,
-            train=train,
-            transform=transform,
-            download=download,
-        ),
+    "cifar10": lambda transform, dataset_path=DROOT: datasets.CIFAR10(
+        transform=transform, root=dataset_path, train=True, download=True,
+    ),
+    "cifar100": lambda transform, dataset_path=DROOT: datasets.CIFAR100(
+        transform=transform, root=dataset_path, train=True, download=True,
+    ),
+    "inaturalist": lambda transform, dataset_path=DROOT: datasets.INaturalist(
+        transform=transform,
+        root=dataset_path,
+        version="2021_train_mini",
+        target_type="full",
+        download=False,  # tänker inte ladda ner 224gb >:(
+    ),
+    "imagenet": lambda transform, dataset_path=DROOT: datasets.ImageFolder(
+        root=os.path.join(dataset_path, "tiny-imagenet-200", "train"),
+        transform=transform,
+    ),
 }
+
 
 def load_dataset(dataset_name, transform, dataset_path="_datasets/"):
     """

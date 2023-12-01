@@ -5,6 +5,9 @@ from tqdm import tqdm
 import mlflow
 import logging
 
+from src.utils.evaluate import rank_me
+
+
 LOG = logging.getLogger(__name__)
 LOG.addHandler(logging.NullHandler())
 
@@ -31,11 +34,16 @@ class ImagePretrainer:
         self.epochs = epochs
         self.device = device
         self.batch_size = batch_size
+        self.eval_dataloader = None
         if len(kwargs) > 0:
             LOG.warning(f"Unused arguments: {kwargs}")
 
     def train_iter(self, images):
         raise NotImplementedError("subclass me")
+
+    def set_eval_dataloader(self, dataloader):
+        LOG.info("Setting eval_dataloader, will evaluate on this after every epoch.")
+        self.eval_dataloader = dataloader
 
     def train(self, dataloader):
         """
@@ -54,6 +62,7 @@ class ImagePretrainer:
         n_iter = 0
         top1acc = None
         for epoch_counter in range(self.epochs):
+            self.model.train()
             for images, _ in tqdm(dataloader):
                 compute_stats = bool(n_iter % 100 == 0)
                 n_iter += 1
@@ -92,6 +101,14 @@ class ImagePretrainer:
                 f"Epoch: {epoch_counter}",
                 f"Loss: {loss.item()}",
             ]
+
+            if self.eval_dataloader is not None:
+                LOG.debug("Performing post epoch-evaluation")
+                rank = rank_me(self.model, self.eval_dataloader,
+                               device=self.device)
+                epoch_stats.append(f"Evaluated Rank: {rank.item()}")
+                mlflow.log_metric("rankme_rank", rank, step=n_iter - 1)
+
             if top1acc is not None:
                 epoch_stats.append(f"Top1 accuracy: {top1acc}")
             LOG.debug("\n".join(epoch_stats))
