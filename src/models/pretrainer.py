@@ -107,6 +107,7 @@ class ImagePretrainer:
                 rank = rank_me(self.model, self.eval_dataloader,
                                device=self.device)
                 epoch_stats.append(f"Evaluated Rank: {rank.item()}")
+                mlflow.log_metric("rankme_rank", rank, step=n_iter - 1)
 
             if top1acc is not None:
                 epoch_stats.append(f"Top1 accuracy: {top1acc}")
