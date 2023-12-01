@@ -35,6 +35,7 @@ def main():
     parser.add_argument("--dataset", dest="dataset", choices=DATASETS.keys(), default="cifar100", help="Dataset to evaluate on.")
     parser.add_argument("--device", dest="device", type=get_device, default=get_device(None), help="Device to run on.")
     parser.add_argument("--epochs", dest="finetune_epochs", default=10, type=int, help="Epochs to finetune on")
+    parser.add_argument("-j", "--num-workers", dest="num_workers", default=4, type=int, help="Number of workers to use for the dataloaders.")
 
     args = parser.parse_args()
 
@@ -78,7 +79,14 @@ def main():
             LOG.info(f"No CIFAR100 accuracy found for run: {run_id}, finetuning over {args.finetune_epochs} epochs...")
             model.train()
 
-            accuracy = finetune.finetune_pipeline(model, testset=cifar100, trainset=cifar100, epochs=args.finetune_epochs, device=args.device)
+            accuracy = finetune.finetune_pipeline(
+                model,
+                testset=cifar100,
+                trainset=cifar100,
+                epochs=args.finetune_epochs,
+                num_workers=args.num_workers,
+                device=args.device
+            )
             with mlflow.start_run(run_id=run_id):
                 mlflow.log_metric("CIFAR100_accuracy", accuracy)
                 mlflow.end_run()
@@ -90,5 +98,8 @@ def main():
 
 
 if __name__ == "__main__":
-    os.environ["MLFLOW_TRACKING_URI"] = "http://127.0.0.1:8080"
+    if "MLFLOW_TRACKING_URI" not in os.environ:
+        raise EnvironmentError("Environment variable MLFLOW_TRACKING_URI not "
+                               "set. Example: set it with\n"
+                               "export MLFLOW_TRACKING_URI=\"http://127.0.0.1:8080\"")
     main()

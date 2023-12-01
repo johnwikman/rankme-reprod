@@ -267,5 +267,8 @@ def pretraining():
 
 
 if __name__ == "__main__":
-    os.environ["MLFLOW_TRACKING_URI"] = "http://127.0.0.1:8080"
+    if "MLFLOW_TRACKING_URI" not in os.environ:
+        raise EnvironmentError("Environment variable MLFLOW_TRACKING_URI not "
+                               "set. Example: set it with\n"
+                               "export MLFLOW_TRACKING_URI=\"http://127.0.0.1:8080\"")
     pretraining()
