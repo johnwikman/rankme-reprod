@@ -6,6 +6,8 @@ _models/
 mlruns/
 mlartifacts/
 nohup.out
+run.stderr
+run.stdout
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

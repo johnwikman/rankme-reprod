@@ -1,6 +1,4 @@
-from . import simclr
-
-HYPERPARAMS = {
+HYPERPARAMETERS = {
     "simclr": [
         #{"batch_size": 2048, "lr": 0.6, "weight_decay": 1e-6, "temperature" : 0.05},  # "d": 512, 
         #{"batch_size": 2048, "lr": 0.6, "weight_decay": 1e-6, "temperature" : 0.07},  # "d": 512, 

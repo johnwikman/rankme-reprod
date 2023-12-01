@@ -1,21 +1,28 @@
 #!/usr/bin/env python3
 
+"""
+command that I usually run
+
+mlflow run . -P device="cuda" -P workers=12 -P verbosity=0 -P dataset=cifar10 --env-manager local
+"""
+
 import argparse
 import os
 import subprocess
 
-from src.config
+import src.config
 
 def main():
     parser = argparse.ArgumentParser("Run training configuration")
     parser.add_argument("trainer", choices=src.config.HYPERPARAMETERS.keys())
+    parser.add_argument("--device", dest="device", default="cuda", help="Device to run on")
     parser.add_argument("-L", "--local-env-manager", dest="use_local_env_manager", action="store_true")
     args = parser.parse_args()
 
-    for run, params in src.config.HYPERPARAMETERS[args.trainer]:
+    for run, params in enumerate(src.config.HYPERPARAMETERS[args.trainer]):
         cmd = [
-            "mlflow", "run", ".",
-            #"-P", "device=cuda", # auto choose this
+            "mlflow", "run", os.path.abspath(os.path.dirname(__file__)),
+            "-P", f"device={args.device}", # auto choose this
             "-P", f"workers={os.cpu_count()}",
             "-P", "verbosity=0",
             "-P", "dataset=imagenet",
@@ -29,8 +36,8 @@ def main():
             cmd += ["--env-manager", "local"]
 
         print(f"running command: \"{' '.join(cmd)}\"")
-        with (open("run.stdout", "a"), open("run.stderr", "a")) as (fout, ferr):
-            ret = subprocess.run(cmd, stdout=fout, stderr=ferr)
+        with open("run.stdout", "a+") as fout, open("run.stderr", "a+") as ferr:
+            ret = subprocess.run(cmd, stdout=fout, stderr=ferr, shell=True, env=os.environ)
         if ret.returncode != 0:
             print("WARNING: Non-zero return code!")
 
