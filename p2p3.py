@@ -26,7 +26,7 @@ finetune_epochs = 2
 if __name__ == "__main__":
     #freeze_support()
 
-    os.environ["MLFLOW_TRACKING_URI"] = "http://127.0.0.1:5000"
+    os.environ["MLFLOW_TRACKING_URI"] = "http://127.0.0.1:8080"
 
     all_runs = mlflow.search_runs()
     # filter out runs where status is failed
