@@ -29,7 +29,9 @@ LOG = logging.getLogger(__name__)
 LOG.addHandler(logging.NullHandler())
 
 
-def finetune_pipeline(model, trainset, testset, epochs=5, device=None):
+def finetune_pipeline(model, trainset, testset, epochs=5,
+                      num_workers=12,
+                      device=None):
 
     # load in data thank you chatgpt
 
@@ -43,9 +45,9 @@ def finetune_pipeline(model, trainset, testset, epochs=5, device=None):
     '''
     device = get_device(device)
 
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=64, shuffle=True)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=True)
-    
+    trainloader = torch.utils.data.DataLoader(trainset, num_workers=num_workers, batch_size=64, shuffle=True)
+    testloader = torch.utils.data.DataLoader(testset, num_workers=num_workers, batch_size=64, shuffle=True)
+
     n_classes = 100
     
     model.projector = torch.nn.Linear(512, n_classes, device=device) # NOTE: Hardcoded but should be correct for resnet18
@@ -91,7 +93,7 @@ def finetune_pipeline(model, trainset, testset, epochs=5, device=None):
     with torch.no_grad():
         for (images, labels) in testloader:
             #images, labels = data
-            inputs = inputs.to(device)
+            images = images.to(device)
             labels = labels.to(device)
 
             outputs = model(images)

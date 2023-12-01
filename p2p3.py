@@ -66,26 +66,26 @@ def main():
         model.to(args.device)
 
         if not ('rank' in run.data.metrics):
-            LOG.info("No rank found for run: ", run_id, "computing...")
+            LOG.info(f"No rank found for run: {run_id} computing...")
             model.eval()
             rank = rank_me(model, cifar100, device=args.device)
             with mlflow.start_run(run_id=run_id):
                 mlflow.log_metric("rank", rank)
                 mlflow.end_run()
-                LOG.info("rank estimation: ", rank, "for run: ", run_id)
+                LOG.info(f"rank estimation: {rank} for run: {run_id}")
         
         if not ('CIFAR100_accuracy' in run.data.metrics):
-            LOG.info("No CIFAR100 accuracy found for run: ", run_id, ", finetuning over", args.finetune_epochs, " epochs...")
+            LOG.info(f"No CIFAR100 accuracy found for run: {run_id}, finetuning over {args.finetune_epochs} epochs...")
             model.train()
 
             accuracy = finetune.finetune_pipeline(model, testset=cifar100, trainset=cifar100, epochs=args.finetune_epochs, device=args.device)
             with mlflow.start_run(run_id=run_id):
                 mlflow.log_metric("CIFAR100_accuracy", accuracy)
                 mlflow.end_run()
-                LOG.info("CIFAR100 accuracy: ", accuracy, "for run: ", run_id)
+                LOG.info(f"CIFAR100 accuracy: {accuracy} for run: {run_id}")
 
         if not ('iNaturalist_accuracy' in run.data.metrics):
-            LOG.info("No iNaturalist accuracy found for run: ", run_id, ", finetuning over", args.finetune_epochs, " epochs...")
+            LOG.info(f"No iNaturalist accuracy found for run: {run_id}, finetuning over {args.finetune_epochs} epochs...")
             LOG.info("jk, not implemented yet")
 
 
