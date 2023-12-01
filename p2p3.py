@@ -77,7 +77,6 @@ def main():
         if not ('CIFAR100_accuracy' in run.data.metrics):
             LOG.info("No CIFAR100 accuracy found for run: ", run_id, ", finetuning over", args.finetune_epochs, " epochs...")
             model.train()
-            model.to(args.device)
 
             accuracy = finetune.finetune_pipeline(model, testset=cifar100, trainset=cifar100, epochs=args.finetune_epochs, device=args.device)
             with mlflow.start_run(run_id=run_id):

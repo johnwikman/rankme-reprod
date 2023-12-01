@@ -48,7 +48,7 @@ def finetune_pipeline(model, trainset, testset, epochs=5, device=None):
     
     n_classes = 100
     
-    model.projector = torch.nn.Linear(512, n_classes) # NOTE: Hardcoded but should be correct for resnet18
+    model.projector = torch.nn.Linear(512, n_classes, device=device) # NOTE: Hardcoded but should be correct for resnet18
 
     for param in model.encoder.parameters():
         param.requires_grad = False
