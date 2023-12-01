@@ -23,6 +23,20 @@ DATASETS = {
         root=os.path.join(dataset_path, "tiny-imagenet-200", "train"),
         transform=transform,
     ),
+    "cifar100-val": lambda transform, dataset_path=DROOT: datasets.CIFAR100(
+        transform=transform, root=dataset_path, train=False, download=True,
+    ),
+    "inaturalist-val": lambda transform, dataset_path=DROOT: datasets.INaturalist(
+        transform=transform,
+        root=dataset_path,
+        version="2021_valid",
+        target_type="full",
+        download=False,  # tänker inte ladda ner 224gb >:(
+    ),
+    "imagene-val": lambda transform, dataset_path=DROOT: datasets.ImageFolder(
+        root=os.path.join(dataset_path, "tiny-imagenet-200", "val"),
+        transform=transform,
+    ),
 }
 
 
