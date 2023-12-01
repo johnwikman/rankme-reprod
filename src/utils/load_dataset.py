@@ -11,7 +11,7 @@ DATASETS = {
     ),
     "cifar100": lambda transform, dataset_path=DROOT: datasets.CIFAR100(
         transform=transform, root=dataset_path, train=True, download=True,
-    )
+    ),
     "inaturalist": lambda transform, dataset_path=DROOT: datasets.INaturalist(
         transform=transform,
         root=dataset_path,
