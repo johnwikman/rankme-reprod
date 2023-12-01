@@ -243,5 +243,5 @@ def pretraining():
 
 
 if __name__ == "__main__":
-    os.environ["MLFLOW_TRACKING_URI"] = "http://127.0.0.1:8080"
+    os.environ["MLFLOW_TRACKING_URI"] = "http://127.0.0.1:5000"
     pretraining()

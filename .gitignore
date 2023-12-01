@@ -4,6 +4,7 @@ _datasets/
 runs/
 _models/
 mlruns/
+mlartifacts/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
