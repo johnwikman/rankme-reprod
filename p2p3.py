@@ -57,6 +57,7 @@ def main():
     #cifar_name = "CIFAR100"
     #cifar100 = load_dataset(dataset_name=cifar_name, transform=cifar_transform, dataset_path=dataset_path)
     cifar100 = DATASETS[args.dataset](transform=cifar_transform)
+    cifar100_validation = DATASETS[f"{args.dataset}-val"](transform=cifar_transform)
 
     for run_iter in all_successful_runs.iterrows():
         run_id = run_iter[1]['run_id']
@@ -84,7 +85,7 @@ def main():
             accuracy = finetune.finetune_pipeline(
                 model,
                 testset=cifar100,
-                trainset=cifar100,
+                trainset=cifar100_validation,
                 epochs=args.finetune_epochs,
                 num_workers=args.num_workers,
                 device=args.device
