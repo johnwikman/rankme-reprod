@@ -3,6 +3,8 @@ import logging
 import torch
 import torch.nn as nn
 
+from .pytorch_device import get_device
+
 LOG = logging.getLogger(__name__)
 LOG.addHandler(logging.NullHandler())
 
