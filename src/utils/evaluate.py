@@ -38,7 +38,7 @@ def rank_me(model: nn.Module,
 
     if not isinstance(dataloader, torch.utils.data.DataLoader):
         # its a dataset as we should expect
-        dataloader = DataLoader( ## NOTE: some hardcoded values here
+        dataloader = torch.utils.data.DataLoader( ## NOTE: some hardcoded values here
             dataloader, batch_size=64,
             shuffle=True,
             num_workers=4,
