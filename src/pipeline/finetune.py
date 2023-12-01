@@ -23,7 +23,7 @@ from torchvision import datasets, transforms
 from src.utils.load_dataset import load_dataset
 from src.utils.data_aug import BYOLTransform
 
-def finetune_pipeline(model, dataset_path, dataset_name, epochs=5):
+def finetune_pipeline(model, trainset, testset, epochs=5):
 
     # load in data thank you chatgpt
 
@@ -36,23 +36,8 @@ def finetune_pipeline(model, dataset_path, dataset_name, epochs=5):
                                     ])
     '''
 
-    trainset = load_dataset(dataset_path, dataset_name=dataset_name) # should probably take a parameter for whether to load in train or test data
-
-    testset = load_dataset(dataset_path, dataset_name=dataset_name)
-
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=64, shuffle=True)
     testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=True)
-
-    # Download and load the training data
-    #trainset = datasets.FashionMNIST('_datasets/fashion', download=True, train=True, transform=transform)
-    #trainloader = torch.utils.data.DataLoader(trainset, batch_size=64, shuffle=True)
-
-    # Download and load the test data
-    #testset = datasets.FashionMNIST('_datasets/fashion', download=True, train=False, transform=transform)
-    #testloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=True)
-
-    # load in model
-    #model = torch.load(model_path)
     
     n_classes = 100
     
