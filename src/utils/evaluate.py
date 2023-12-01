@@ -43,7 +43,9 @@ def rank_me(model: nn.Module,
 
     LOG.debug("Doing forward pass on full dataset")
     all_outputs = []
-    for images, labels in tqdm(dataloader):
+    eval_iterator = tqdm(dataloader)
+    eval_iterator.set_postfix_str("[rank_me] Forward pass")
+    for images, labels in eval_iterator:
         #images = torch.flatten(images, start_dim=1)
         #images = images.to(device)
         #labels = labels.to(device)
