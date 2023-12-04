@@ -26,11 +26,24 @@ To set it up locally, run the following command in the root of the project:
 mlflow server --host 127.0.0.1 --port 8080
 
 # kanske såhär
-mlflow server --backend-store-uri postgres://avnadmin:AVNS_3gVxQDkJiI0AmDebBM3@rankme-reprod-rankme.a.aivencloud.com:12005/defaultdb?sslmode=require
+mlflow server --host 127.0.0.1 --port 8080 \
+    --backend-store-uri postgresql://{username}:{password}@rankme.crbppwjwxelm.eu-north-1.rds.amazonaws.com:5432/rankme \
+    --default-artifact-root s3://rankme-reprod/mlflow
+
+
 
 ```
 
 Later, we will setup a URI to an external database. Very mumma!
+
+### Sätta upp aws
+
+```bash
+# OBS! psycopg2 kräver "brew install postgresql" på macbook m1
+pip install awscli psycopg2 boto3 # aws deps
+aws configure
+# knappa in access key och secret key
+```
 
 ### 3. Run the code
 The repo contains a [MLproject](MLproject) file which defines the entry points for the project. First time you run it, it will create a conda environment corresponding to the name at the top of the file. 
@@ -43,9 +56,6 @@ mlflow run . -P device="mps"
 
 # vill man ha fler parameterar får man lägga till fler -P
 mlflow run . -P device="mps" -P epochs=100 -P batch_size=64 # osv
-
-# om John måste köra den:
-mlflow run . -P device="cuda" -P workers=16 --env-manager local
 ```
 
 Currently, all parameters have default values except `device`. These values are logged as "parameters" within an MLFlow run. In the experiments, we log "metrics", which are running values that change over time.

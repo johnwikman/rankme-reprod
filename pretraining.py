@@ -155,6 +155,7 @@ def pretraining():
     parser.add_argument(
         "--weight-decay",
         dest="weight_decay",
+        default=1e-6,
         type=float,
         help="Weight decay for SimCLR",
     )
@@ -169,12 +170,12 @@ def pretraining():
     LOG.debug(f"arguments: {vars(args)}")
 
     # insanely stupid workaround for mlflow bug
-    if mlflow.active_run():
-        mlflow.end_run()
+    # if mlflow.active_run():
+    #    mlflow.end_run()
 
-    run_name = datetime.now().strftime(f"run_%Y%m%d_%H%M%S_{args.trainer}")
-    with mlflow.start_run(run_name=run_name):
-        mlflow.set_tag("mlflow.runName", run_name)
+    # run_name = datetime.now().strftime(f"run_%Y%m%d_%H%M%S_{args.trainer}")
+    with mlflow.start_run():
+        # mlflow.set_tag("mlflow.runName", run_name)
         LOG.debug(f"Loading dataset {args.dataset} with BYOL transform")
         dataset = DATASETS[args.dataset](
             dataset_dir=args.dataset_dir,
@@ -245,5 +246,5 @@ def pretraining():
 
 
 if __name__ == "__main__":
-    os.environ["MLFLOW_TRACKING_URI"] = "http://127.0.0.1:8080"
+    os.environ["MLFLOW_TRACKING_URI"] = "http://127.0.0.1:8085"
     pretraining()
