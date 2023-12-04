@@ -28,6 +28,7 @@ def main():
             "-P", "dataset=imagenet",
             "-P", "eval_dataset=imagenet",
             "-P", "epochs=100",
+            "-P", f"trainer={args.trainer}",
         ]
         for k,v in params.items():
             cmd += ["-P", f"{k}={v}"]
