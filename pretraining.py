@@ -65,6 +65,14 @@ def pretraining():
     )
 
     parser.add_argument(
+        "--trl-dataset",
+        dest="trl_dataset",
+        choices=DATASETS.keys(),
+        default=None,
+        help="Dataset to use for target rank loss",
+    )
+
+    parser.add_argument(
         "--trainer",
         dest="trainer",
         choices={"simclr", "vicreg"},
@@ -168,6 +176,15 @@ def pretraining():
         help="Weight decay for SimCLR",
     )
 
+    parser.add_argument("--use-target-rank", dest="use_target_rank", type=int, default=0,
+                        help="Optimize for target rank (default: no target rank)")
+    parser.add_argument("--target-rank", dest="target_rank", type=float, default=None,
+                        help="Target rank to optimize for")
+    parser.add_argument("--target-rank-logalpha", dest="target_rank_logalpha", type=float, default=0.2,
+                        help="Initial value for target rank logalpha")
+    parser.add_argument("--target-rank-lr", dest="target_rank_lr", type=float, default=1e-4,
+                        help="Optimizer rate for target rank logalpha")
+
     # Parse arguments
     args = parser.parse_args()
 
@@ -225,6 +242,27 @@ def pretraining():
             "batch_size": args.batch_size,
             "device": args.device,
         }
+
+        if args.use_target_rank != 0:
+            target_rank_logalpha = torch.nn.Parameter(torch.tensor(args.target_rank_logalpha)).to(args.device)
+            target_rank_loss_opt = torch.optim.Adam([target_rank_logalpha], lr=args.target_rank_lr)
+            trl_dataset = DATASETS[args.trl_dataset](
+                dataset_path=args.dataset_dir,
+                transform=torchvision.transforms.ToTensor(),
+            )
+            trl_dataloader = torch.utils.data.DataLoader(
+                trl_dataset,
+                batch_size=args.batch_size,
+                shuffle=True,
+                num_workers=args.workers,
+                pin_memory=True,
+                drop_last=True,
+            )
+            common_kwargs["use_target_rank_loss"] = True
+            common_kwargs["target_rank"] = target_rank
+            common_kwargs["target_rank_loss_logalpha"] = target_rank_logalpha
+            common_kwargs["target_rank_loss_opt"] = target_rank_loss_opt
+            common_kwargs["target_rank_dataloader"] = trl_dataloader
 
         if args.trainer == "simclr":
             trainer = SimCLR(

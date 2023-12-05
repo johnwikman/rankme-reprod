@@ -17,7 +17,7 @@ DATASETS = {
         root=dataset_path,
         version="2021_train_mini",
         target_type="full",
-        download=False,  # tänker inte ladda ner 224gb >:(
+        download=True,  # tänker inte ladda ner 224gb >:(
     ),
     "imagenet": lambda transform, dataset_path=DROOT: datasets.ImageFolder(
         root=os.path.join(dataset_path, "tiny-imagenet-200", "train"),
