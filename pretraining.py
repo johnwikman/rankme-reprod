@@ -244,8 +244,15 @@ def pretraining():
         }
 
         if args.use_target_rank != 0:
-            target_rank_logalpha = torch.nn.Parameter(torch.tensor(args.target_rank_logalpha)).to(args.device)
-            target_rank_loss_opt = torch.optim.Adam([target_rank_logalpha], lr=args.target_rank_lr)
+            target_rank_logalpha = torch.nn.Parameter(torch.tensor(
+                args.target_rank_logalpha
+                device=args.device,
+                dtype=np.float32,
+            ))
+            target_rank_loss_opt = torch.optim.Adam(
+                [target_rank_logalpha],
+                lr=args.target_rank_lr
+            )
             trl_dataset = DATASETS[args.trl_dataset](
                 dataset_path=args.dataset_dir,
                 transform=torchvision.transforms.ToTensor(),
