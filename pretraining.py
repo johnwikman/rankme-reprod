@@ -245,9 +245,9 @@ def pretraining():
 
         if args.use_target_rank != 0:
             target_rank_logalpha = torch.nn.Parameter(torch.tensor(
-                args.target_rank_logalpha
+                args.target_rank_logalpha,
                 device=args.device,
-                dtype=np.float32,
+                dtype=torch.float32,
             ))
             target_rank_loss_opt = torch.optim.Adam(
                 [target_rank_logalpha],
@@ -266,7 +266,7 @@ def pretraining():
                 drop_last=True,
             )
             common_kwargs["use_target_rank_loss"] = True
-            common_kwargs["target_rank"] = target_rank
+            common_kwargs["target_rank"] = args.target_rank
             common_kwargs["target_rank_loss_logalpha"] = target_rank_logalpha
             common_kwargs["target_rank_loss_opt"] = target_rank_loss_opt
             common_kwargs["target_rank_dataloader"] = trl_dataloader
