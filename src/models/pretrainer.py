@@ -109,7 +109,7 @@ class ImagePretrainer:
                     with torch.autocast("cuda"):
                         loss, stats = self.train_iter(images, compute_stats)
                         if use_target_rank_loss:
-                            loss = loss + (
+                            loss = loss - (
                                 torch.exp(self.target_rank_loss_logalpha) *
                                 get_rank(self.model(ood_images))
                             )
@@ -119,7 +119,7 @@ class ImagePretrainer:
                 else:
                     loss, stats = self.train_iter(images, compute_stats)
                     if use_target_rank_loss:
-                        loss = loss + (
+                        loss = loss - (
                             torch.exp(self.target_rank_loss_logalpha) *
                             get_rank(self.model(ood_images))
                         )
