@@ -33,8 +33,60 @@ def datetype(s):
         raise ValueError(f"Unknown date format for \"{s}\". Known formats are {formats}.")
     return dt
 
+
+def collect(hashes, target, mlruns_dir, mlartifacts_dir, **kwargs):
+    print("collecting...")
+    os.makedirs(target, exist_ok=True)
+    target_mlruns = os.path.join(target, "mlruns", "0")
+    target_mlartifacts = os.path.join(target, "mlartifacts", "0")
+
+    def copydir(src, dst):
+        if os.path.exists(dst):
+            print(f"Warning: {dst} already exists. Removing it before copying the new files there.")
+            shutil.rmtree(dst)
+        shutil.copytree(src, dst)
+
+    for hash in hashes:
+        src_run = os.path.join(mlruns_dir, hash)
+        dst_run = os.path.join(target_mlruns, hash)
+        src_artifact = os.path.join(mlartifacts_dir, hash)
+        dst_artifact = os.path.join(target_mlartifacts, hash)
+        os.makedirs(target_mlruns, exist_ok=True)
+        copydir(src_run, dst_run)
+        if os.path.exists(src_artifact):
+            os.makedirs(target_mlartifacts, exist_ok=True)
+            copydir(src_artifact, dst_artifact)
+
+def remove(hashes, mlruns_dir, mlartifacts_dir, **kwargs):
+    for hash in hashes:
+        src_run = os.path.join(mlruns_dir, hash)
+        src_run_name_path = os.path.join(src_run, "tags", "mlflow.runName")
+        src_artifact = os.path.join(mlartifacts_dir, hash)
+        has_artifact = os.path.isdir(src_artifact)
+        msg = f"Remove run {hash}"
+        if os.path.isfile(src_run_name_path):
+            with open(src_run_name_path, "r") as f:
+                msg += " (" + f.read() + ")"
+        if has_artifact:
+            msg += " and its artifact"
+        msg += "?"
+        choice = input(msg + " [y/N] ").lower().strip()
+        if choice == "y":
+            print(f"(Removing {hash})")
+            shutil.rmtree(src_run)
+            if has_artifact:
+                shutil.rmtree(src_artifact)
+        else:
+            print(f"(Not removing)")
+
+
 def main():
+    MODES = {
+        "collect": collect,
+        "remove": remove,
+    }
     parser = argparse.ArgumentParser("Extract mlflow runs and their artifacts")
+    parser.add_argument("mode", choices=MODES.keys(), help="Action to perform")
     parser.add_argument("--mlruns", dest="mlruns", type=str, default=DEFAULT_MLRUNS,
                         help="Default directory for mlruns")
     parser.add_argument("--mlartifacts", dest="mlartifacts", type=str, default=DEFAULT_MLARTIFACTS,
@@ -90,26 +142,7 @@ def main():
         print("No runs found")
         return
 
-    os.makedirs(args.target, exist_ok=True)
-    target_mlruns = os.path.join(args.target, "mlruns", "0")
-    target_mlartifacts = os.path.join(args.target, "mlartifacts", "0")
-
-    def copydir(src, dst):
-        if os.path.exists(dst):
-            print(f"Warning: {dst} already exists. Removing it before copying the new files there.")
-            shutil.rmtree(dst)
-        shutil.copytree(src, dst)
-
-    for hash in hashes:
-        src_run = os.path.join(mlruns_dir, hash)
-        dst_run = os.path.join(target_mlruns, hash)
-        src_artifact = os.path.join(mlartifacts_dir, hash)
-        dst_artifact = os.path.join(target_mlartifacts, hash)
-        os.makedirs(target_mlruns, exist_ok=True)
-        copydir(src_run, dst_run)
-        if os.path.exists(src_artifact):
-            os.makedirs(target_mlartifacts, exist_ok=True)
-            copydir(src_artifact, dst_artifact)
+    MODES[args.mode](hashes=hashes, mlruns_dir=mlruns_dir, mlartifacts_dir=mlartifacts_dir, target=args.target)
 
 if __name__ == "__main__":
     main()
