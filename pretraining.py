@@ -16,7 +16,7 @@ from src.models.encoder_projector import MODELS
 from src.models import SimCLR, VICReg
 from src.utils.load_dataset import DATASETS
 from src.utils.logging import init_logging
-from src.utils.data_aug import BYOLTransform
+from src.utils.data_aug import BYOLTransform, SplitTransform
 from src.utils.optimizers import LARS
 from src.utils.pytorch_device import get_device
 
@@ -62,14 +62,6 @@ def pretraining():
         choices=DATASETS.keys(),
         default=None,
         help="Dataset to evaluate on during training",
-    )
-
-    parser.add_argument(
-        "--trl-dataset",
-        dest="trl_dataset",
-        choices=DATASETS.keys(),
-        default=None,
-        help="Dataset to use for target rank loss",
     )
 
     parser.add_argument(
@@ -202,7 +194,11 @@ def pretraining():
         LOG.debug(f"Loading dataset {args.dataset} with BYOL transform")
         dataset = DATASETS[args.dataset](
             dataset_path=args.dataset_dir,
-            transform=BYOLTransform(crop_size=32),
+            transform=SplitTransform(
+                # Second transformation is used to probe the original image for the rankme loss
+                t1=BYOLTransform(crop_size=32),
+                t2=torchvision.transforms.ToTensor(),
+            )
         )
         dataloader = torch.utils.data.DataLoader(
             dataset,
@@ -253,23 +249,10 @@ def pretraining():
                 [target_rank_logalpha],
                 lr=args.target_rank_lr
             )
-            trl_dataset = DATASETS[args.trl_dataset](
-                dataset_path=args.dataset_dir,
-                transform=torchvision.transforms.ToTensor(),
-            )
-            trl_dataloader = torch.utils.data.DataLoader(
-                trl_dataset,
-                batch_size=args.batch_size,
-                shuffle=True,
-                num_workers=args.workers,
-                pin_memory=True,
-                drop_last=True,
-            )
             common_kwargs["use_target_rank_loss"] = True
             common_kwargs["target_rank"] = args.target_rank
             common_kwargs["target_rank_loss_logalpha"] = target_rank_logalpha
             common_kwargs["target_rank_loss_opt"] = target_rank_loss_opt
-            common_kwargs["target_rank_dataloader"] = trl_dataloader
 
         if args.trainer == "simclr":
             trainer = SimCLR(

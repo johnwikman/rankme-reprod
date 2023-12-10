@@ -29,7 +29,6 @@ class ImagePretrainer:
         target_rank_loss_opt=None,
         target_rank_loss_logalpha=None,
         target_rank=None,
-        target_rank_dataloader=None,
         **kwargs
     ) -> None:
         self.model = model
@@ -44,7 +43,6 @@ class ImagePretrainer:
         self.target_rank_loss_opt = target_rank_loss_opt
         self.target_rank_loss_logalpha = target_rank_loss_logalpha
         self.target_rank = target_rank
-        self.target_rank_dataloader = target_rank_dataloader
         if self.use_target_rank_loss:
             if self.target_rank_loss_opt is None:
                 raise ValueError("Missing target rank optimizer")
@@ -52,8 +50,6 @@ class ImagePretrainer:
                 raise ValueError("Missing target rank log(alpha) parameter")
             if self.target_rank is None:
                 raise ValueError("Missing target rank hyperparameter")
-            if self.target_rank_dataloader is None:
-                raise ValueError("Missing target rank data loader")
         if len(kwargs) > 0:
             LOG.warning(f"Unused arguments: {kwargs}")
 
@@ -80,7 +76,6 @@ class ImagePretrainer:
         use_target_rank_loss = False
         if "use_target_rank_loss" in self.__dict__:
             use_target_rank_loss = self.use_target_rank_loss
-            target_rank_iterator = iter(self.target_rank_dataloader)
 
         LOG.info(f"Start {type(self).__name__} training for {self.epochs} epochs.")
         LOG.info(f"(Using 16-bit floating point precision: {self.fp16_precision})")
@@ -90,18 +85,12 @@ class ImagePretrainer:
         top1acc = None
         for epoch_counter in range(self.epochs):
             self.model.train()
-            for images, _ in tqdm(dataloader):
+            for (images, trl_images), _ in tqdm(dataloader):
                 compute_stats = bool(n_iter % 100 == 0)
                 n_iter += 1
 
-                # NOTE: We only use in-distribution data now. Comment this out to use ood data for rankme loss
-                if use_target_rank_loss and False:
-                    ood_next = next(target_rank_iterator, None)
-                    if ood_next is None:
-                        target_rank_iterator = iter(self.target_rank_dataloader)
-                        ood_next = next(target_rank_iterator)
-                    ood_images, _ = ood_next
-                    ood_images = ood_images.to(self.device)
+                if use_target_rank_loss:
+                    trl_images = trl_images.to(self.device)
 
                 self.optimizer.zero_grad()
 
@@ -112,7 +101,7 @@ class ImagePretrainer:
                         if use_target_rank_loss:
                             loss = loss - (
                                 torch.exp(self.target_rank_loss_logalpha) *
-                                get_rank(self.model(ood_images))
+                                get_rank(self.model(trl_images))
                             )
                         scaler.scale(loss).backward()
                         scaler.step(self.optimizer)
@@ -122,7 +111,7 @@ class ImagePretrainer:
                     if use_target_rank_loss:
                         loss = loss - (
                             torch.exp(self.target_rank_loss_logalpha) *
-                            get_rank(self.model(ood_images))
+                            get_rank(self.model(trl_images))
                         )
                     loss.backward()
                     self.optimizer.step()
@@ -131,7 +120,7 @@ class ImagePretrainer:
                 if use_target_rank_loss:
                     self.target_rank_loss_opt.zero_grad()
                     target_rank_loss = torch.exp(self.target_rank_loss_logalpha) * (
-                        get_rank(self.model(ood_images)) - self.target_rank
+                        get_rank(self.model(trl_images)) - self.target_rank
                     ).clone().detach().requires_grad_(False)
                     target_rank_loss.backward()
                     self.target_rank_loss_opt.step()

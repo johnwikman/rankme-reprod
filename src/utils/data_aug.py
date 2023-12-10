@@ -21,6 +21,16 @@ import torchvision.transforms as transforms
 import PIL.Image
 
 
+class SplitTransform:
+    def __init__(self, t1, t2):
+        self.t1 = t1
+        self.t2 = t2
+
+    def __call__(self, x):
+        return [self.t1(x), self.t2(x)]
+
+
+
 class BYOLTransform:
     def __init__(self, crop_size):
         """
