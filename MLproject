@@ -29,7 +29,7 @@ entry_points:
       use_target_rank: {type: int, default: 0}
       target_rank: {type: float, default: 384}
       target_rank_logalpha: {type: float, default: -1.6}
-      target_rank_lr: {type: float, default: 3e-4}
+      target_rank_lr: {type: float, default: 3e-2}
       trl_dataset: {type: string, default: "cifar100"}
     command: "python pretraining.py -v {verbosity} --logfile={logfile} --dataset-dir={dataset_dir} --model-dir={model_dir} --trainer={trainer} --dataset={dataset} --eval-dataset={eval_dataset} --model={model} --device={device} --feat-dim={featdim} -j {workers} --temperature={temperature} --sim-coeff={sim_coeff} --std-coeff={std_coeff} --cov-coeff={cov_coeff} --batch-size={batch_size} --learning-rate={lr} --epochs={epochs} --weight-decay={weight_decay}
     --trl-dataset={trl_dataset} --use-target-rank={use_target_rank} --target-rank={target_rank}

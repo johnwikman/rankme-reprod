@@ -94,7 +94,8 @@ class ImagePretrainer:
                 compute_stats = bool(n_iter % 100 == 0)
                 n_iter += 1
 
-                if use_target_rank_loss:
+                # NOTE: We only use in-distribution data now. Comment this out to use ood data for rankme loss
+                if use_target_rank_loss and False:
                     ood_next = next(target_rank_iterator, None)
                     if ood_next is None:
                         target_rank_iterator = iter(self.target_rank_dataloader)
