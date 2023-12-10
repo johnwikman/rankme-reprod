@@ -24,7 +24,7 @@ def main():
         cmd = [
             "mlflow", "run", str(os.path.abspath(os.path.dirname(__file__))),
             "-P", f"device={args.device}", # auto choose this
-            "-P", f"workers={max(1, os.cpu_count())}",
+            "-P", f"workers={max(1, min(8, os.cpu_count()))}",
             "-P", "verbosity=0",
             "-P", "dataset=imagenet",
             "-P", "eval_dataset=imagenet",
