@@ -33,9 +33,12 @@ DATASETS = {
         target_type="full",
         download=False,  # tänker inte ladda ner 224gb >:(
     ),
-    "imagene-val": lambda transform, dataset_path=DROOT: datasets.ImageFolder(
+    "imagenet-val": lambda transform, dataset_path=DROOT: datasets.ImageFolder(
         root=os.path.join(dataset_path, "tiny-imagenet-200", "val"),
         transform=transform,
+    ),
+    "caltech101": lambda transform, dataset_path=DROOT: datasets.Caltech101(
+        root=dataset_path, transform=transform, download=True
     ),
 }
 

@@ -10,6 +10,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as data
+from src.utils.logging import init_logging
+import logging
 import torchvision
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
@@ -18,6 +20,7 @@ import os
 import numpy as np
 from tqdm import tqdm
 from torch.linalg import svdvals
+
 #from src.utils.data_aug import simclr_transform
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 from src.utils.load_dataset import load_dataset
@@ -40,27 +43,35 @@ def rank_me(model: nn.Module, dataset, device="cpu"):
 
     '''
 
+
     #model = torch.load(model_path)
+    LOG = logging.getLogger(__name__)
+    LOG.addHandler(logging.NullHandler())
 
-    model.eval()
+    init_logging(verbosity=1, log_stderr=True)
+    
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+    #print("\n\ndevice", device, "\n\n")
+    LOG.info("device: %s", device)
+
+
+    model.train()
     model.to(device)
 
     #train_dataset = load_dataset(dataset_path, dataset_name=ood_dataset)
-    train_dataset = dataset
 
     if isinstance(dataset, Dataset):
         # its a dataset as we should expect
         dataloader = DataLoader( ## NOTE: some hardcoded values here
-            train_dataset, batch_size=64,
+            dataset, batch_size=64,
             shuffle=True,
-            num_workers=4,
+            num_workers=12,
             pin_memory=True, drop_last=True,
         )
     elif isinstance(dataset, DataLoader):
-        pass
+        dataloader = dataset
     else:
         raise ValueError("dataset is not a dataset or a dataloader")
 
@@ -71,9 +82,12 @@ def rank_me(model: nn.Module, dataset, device="cpu"):
     print("Doing forward pass on full dataset")
     all_outputs = []
     with torch.no_grad():
-        
+        model.eval()
         for batch in tqdm(dataloader):
             images, labels = batch
+            images = images.to(device)
+            labels = labels.to(device)
+            print(type(images[0]))
             #images = torch.flatten(images, start_dim=1)
             #images = images.to(device)
             #labels = labels.to(device)

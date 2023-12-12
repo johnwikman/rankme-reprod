@@ -8,6 +8,9 @@ mlartifacts/
 nohup.out
 run.stderr
 run.stdout
+simclr-runs/
+vicreg-runs/
+all_runs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

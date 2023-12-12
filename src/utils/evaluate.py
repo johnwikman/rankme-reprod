@@ -50,6 +50,7 @@ def rank_me(model: nn.Module,
     device = get_device(device)
 
     model.eval()
+    model.to(device)
 
     LOG.debug("Doing forward pass on full dataset")
     all_outputs = []
