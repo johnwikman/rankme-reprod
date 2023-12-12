@@ -8,6 +8,9 @@ mlartifacts/
 nohup.out
 run.stderr
 run.stdout
+simclr-runs/
+vicreg-runs/
+all_runs/
 
 # Nano editor
 .*.swp
