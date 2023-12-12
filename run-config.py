@@ -17,21 +17,28 @@ def main():
     parser.add_argument("trainer", choices=src.config.HYPERPARAMETERS.keys())
     parser.add_argument("--device", dest="device", default="cuda", help="Device to run on")
     parser.add_argument("-L", "--local-env-manager", dest="use_local_env_manager", action="store_true")
+    parser.add_argument("-R", "--target-rank", dest="target_rank", type=float, default=None)
     args = parser.parse_args()
 
     for run, params in enumerate(src.config.HYPERPARAMETERS[args.trainer]):
         cmd = [
-            "mlflow", "run", os.path.abspath(os.path.dirname(__file__)),
+            "mlflow", "run", str(os.path.abspath(os.path.dirname(__file__))),
             "-P", f"device={args.device}", # auto choose this
-            "-P", f"workers={os.cpu_count()}",
+            "-P", f"workers={max(1, min(8, os.cpu_count()))}",
             "-P", "verbosity=0",
             "-P", "dataset=imagenet",
             "-P", "eval_dataset=imagenet",
             "-P", "epochs=100",
+            "-P", f"trainer={args.trainer}",
         ]
         for k,v in params.items():
             cmd += ["-P", f"{k}={v}"]
 
+        if args.target_rank is not None:
+            cmd += [
+                "-P", "use_target_rank=1",
+                "-P", f"target_rank={args.target_rank}",
+            ]
 
         if args.use_local_env_manager:
             cmd += ["--env-manager", "local"]

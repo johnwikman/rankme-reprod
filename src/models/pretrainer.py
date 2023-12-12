@@ -5,7 +5,7 @@ from tqdm import tqdm
 import mlflow
 import logging
 
-from src.utils.evaluate import rank_me
+from src.utils.evaluate import rank_me, get_rank
 
 
 LOG = logging.getLogger(__name__)
@@ -25,6 +25,10 @@ class ImagePretrainer:
         epochs,
         device,
         batch_size,
+        use_target_rank_loss=False,
+        target_rank_loss_opt=None,
+        target_rank_loss_logalpha=None,
+        target_rank=None,
         **kwargs
     ) -> None:
         self.model = model
@@ -35,6 +39,17 @@ class ImagePretrainer:
         self.device = device
         self.batch_size = batch_size
         self.eval_dataloader = None
+        self.use_target_rank_loss = use_target_rank_loss
+        self.target_rank_loss_opt = target_rank_loss_opt
+        self.target_rank_loss_logalpha = target_rank_loss_logalpha
+        self.target_rank = target_rank
+        if self.use_target_rank_loss:
+            if self.target_rank_loss_opt is None:
+                raise ValueError("Missing target rank optimizer")
+            if self.target_rank_loss_logalpha is None:
+                raise ValueError("Missing target rank log(alpha) parameter")
+            if self.target_rank is None:
+                raise ValueError("Missing target rank hyperparameter")
         if len(kwargs) > 0:
             LOG.warning(f"Unused arguments: {kwargs}")
 
@@ -56,29 +71,61 @@ class ImagePretrainer:
             from torch.cuda.amp import GradScaler
             scaler = GradScaler(enabled=True)
 
+        # Wrap this to enable backwards compatibility with previous instances
+        # that did not have a target rank loss member variable.
+        use_target_rank_loss = False
+        if "use_target_rank_loss" in self.__dict__:
+            use_target_rank_loss = self.use_target_rank_loss
+
         LOG.info(f"Start {type(self).__name__} training for {self.epochs} epochs.")
         LOG.info(f"(Using 16-bit floating point precision: {self.fp16_precision})")
+        LOG.info(f"(Using target rank loss: {use_target_rank_loss})")
 
         n_iter = 0
         top1acc = None
         for epoch_counter in range(self.epochs):
             self.model.train()
-            for images, _ in tqdm(dataloader):
+            for (images, trl_images), _ in tqdm(dataloader):
                 compute_stats = bool(n_iter % 100 == 0)
                 n_iter += 1
 
+                if use_target_rank_loss:
+                    trl_images = trl_images.to(self.device)
+
                 self.optimizer.zero_grad()
 
+                # Model optimization
                 if self.fp16_precision:
                     with torch.autocast("cuda"):
                         loss, stats = self.train_iter(images, compute_stats)
+                        if use_target_rank_loss:
+                            loss = loss - (
+                                torch.exp(self.target_rank_loss_logalpha) *
+                                get_rank(self.model(trl_images))
+                            )
                         scaler.scale(loss).backward()
                         scaler.step(self.optimizer)
                         scaler.update()
                 else:
                     loss, stats = self.train_iter(images, compute_stats)
+                    if use_target_rank_loss:
+                        loss = loss - (
+                            torch.exp(self.target_rank_loss_logalpha) *
+                            get_rank(self.model(trl_images))
+                        )
                     loss.backward()
                     self.optimizer.step()
+
+                # Optimize to achieve target rank on OOD dataset.
+                if use_target_rank_loss:
+                    self.target_rank_loss_opt.zero_grad()
+                    target_rank_loss = torch.exp(self.target_rank_loss_logalpha) * (
+                        get_rank(self.model(trl_images)) - self.target_rank
+                    ).clone().detach().requires_grad_(False)
+                    target_rank_loss.backward()
+                    self.target_rank_loss_opt.step()
+                    stats["target_rank_loss"] = target_rank_loss.item()
+                    stats["target_rank_alpha"] = torch.exp(self.target_rank_loss_logalpha).item()
 
                 if compute_stats:
                     step = n_iter - 1

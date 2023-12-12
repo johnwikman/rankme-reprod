@@ -16,7 +16,7 @@ from src.models.encoder_projector import MODELS
 from src.models import SimCLR, VICReg
 from src.utils.load_dataset import DATASETS
 from src.utils.logging import init_logging
-from src.utils.data_aug import BYOLTransform
+from src.utils.data_aug import BYOLTransform, SplitTransform
 from src.utils.optimizers import LARS
 from src.utils.pytorch_device import get_device
 
@@ -168,6 +168,15 @@ def pretraining():
         help="Weight decay for SimCLR",
     )
 
+    parser.add_argument("--use-target-rank", dest="use_target_rank", type=int, default=0,
+                        help="Optimize for target rank (default: no target rank)")
+    parser.add_argument("--target-rank", dest="target_rank", type=float, default=None,
+                        help="Target rank to optimize for")
+    parser.add_argument("--target-rank-logalpha", dest="target_rank_logalpha", type=float, default=0.2,
+                        help="Initial value for target rank logalpha")
+    parser.add_argument("--target-rank-lr", dest="target_rank_lr", type=float, default=1e-4,
+                        help="Optimizer rate for target rank logalpha")
+
     # Parse arguments
     args = parser.parse_args()
 
@@ -185,7 +194,11 @@ def pretraining():
         LOG.debug(f"Loading dataset {args.dataset} with BYOL transform")
         dataset = DATASETS[args.dataset](
             dataset_path=args.dataset_dir,
-            transform=BYOLTransform(crop_size=32),
+            transform=SplitTransform(
+                # Second transformation is used to probe the original image for the rankme loss
+                t1=BYOLTransform(crop_size=32),
+                t2=torchvision.transforms.ToTensor(),
+            )
         )
         dataloader = torch.utils.data.DataLoader(
             dataset,
@@ -225,6 +238,21 @@ def pretraining():
             "batch_size": args.batch_size,
             "device": args.device,
         }
+
+        if args.use_target_rank != 0:
+            target_rank_logalpha = torch.nn.Parameter(torch.tensor(
+                args.target_rank_logalpha,
+                device=args.device,
+                dtype=torch.float32,
+            ))
+            target_rank_loss_opt = torch.optim.Adam(
+                [target_rank_logalpha],
+                lr=args.target_rank_lr
+            )
+            common_kwargs["use_target_rank_loss"] = True
+            common_kwargs["target_rank"] = args.target_rank
+            common_kwargs["target_rank_loss_logalpha"] = target_rank_logalpha
+            common_kwargs["target_rank_loss_opt"] = target_rank_loss_opt
 
         if args.trainer == "simclr":
             trainer = SimCLR(

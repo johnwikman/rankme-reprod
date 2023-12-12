@@ -25,4 +25,10 @@ entry_points:
       lr: {type: float, default: 0.1}
       epochs: {type: int, default: 10}
       weight_decay: {type: float, default: 1e-6}
-    command: "python pretraining.py -v {verbosity} --logfile={logfile} --dataset-dir={dataset_dir} --model-dir={model_dir} --trainer={trainer} --dataset={dataset} --eval-dataset={eval_dataset} --model={model} --device={device} --feat-dim={featdim} -j {workers} --temperature={temperature} --sim-coeff={sim_coeff} --std-coeff={std_coeff} --cov-coeff={cov_coeff} --batch-size={batch_size} --learning-rate={lr} --epochs={epochs} --weight-decay={weight_decay}"
+      # target rank loss parameters
+      use_target_rank: {type: int, default: 0}
+      target_rank: {type: float, default: 384}
+      target_rank_logalpha: {type: float, default: -1.6}
+      target_rank_lr: {type: float, default: 3e-2}
+    command: "python pretraining.py -v {verbosity} --logfile={logfile} --dataset-dir={dataset_dir} --model-dir={model_dir} --trainer={trainer} --dataset={dataset} --eval-dataset={eval_dataset} --model={model} --device={device} --feat-dim={featdim} -j {workers} --temperature={temperature} --sim-coeff={sim_coeff} --std-coeff={std_coeff} --cov-coeff={cov_coeff} --batch-size={batch_size} --learning-rate={lr} --epochs={epochs} --weight-decay={weight_decay}
+    --use-target-rank={use_target_rank} --target-rank={target_rank} --target-rank-logalpha={target_rank_logalpha} --target-rank-lr={target_rank_lr}"
