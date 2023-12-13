@@ -25,6 +25,7 @@ from src.utils.load_dataset import load_dataset
 from src.utils.data_aug import BYOLTransform
 from src.utils.pytorch_device import get_device
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 LOG = logging.getLogger(__name__)
 LOG.addHandler(logging.NullHandler())
@@ -76,10 +77,10 @@ def finetune_pipeline(model, trainset, testset, epochs=5,
 
     for epoch in range(epochs):  # loop over the dataset multiple times
         running_loss = 0.0
-        for i, (inputs, labels) in enumerate(trainloader, 0):
+        for i, (inputs, labels) in tqdm(enumerate(trainloader, 0)):
 
 
-            print(inputs.shape)
+            #print(inputs.shape)
             inputs = inputs.to(device)
             labels = labels.to(device)
 
