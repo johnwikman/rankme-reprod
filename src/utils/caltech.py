@@ -48,8 +48,8 @@ def get_caltech_loaders(num_workers=12):
         
         data.append(img)
         labels.append(label)
-        
-    data = np.array(data)
+
+    #data = np.array(data)
     labels = np.array(labels)
 
     lb = LabelEncoder()
@@ -85,10 +85,13 @@ def get_caltech_loaders(num_workers=12):
     return train_loader, val_loader, full_loader
 
 if __name__ == '__main__':
-    train_loader, val_loader = get_caltech_loaders()
+    train_loader, val_loader, _ = get_caltech_loaders()
     print(len(train_loader))
     print(len(val_loader))
 
     first_batch = next(iter(train_loader))
     inputs, labels = first_batch
     print(inputs.shape)
+    import matplotlib.pyplot as plt
+    plt.imshow(inputs[0].numpy().transpose(1,2,0))
+    plt.show()
